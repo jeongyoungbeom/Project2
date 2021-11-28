@@ -7,7 +7,6 @@ const router = express.Router()
 router.use(bodyParser.urlencoded({ extended: false }))
 
 // 문의하기
-// ❗️이건 영범오빠한테 물어보기(이런식으로 하는게 맞는지!!)❗️
 router.route('/inquiry').post((req, res) => {
     const memberIdx = req.body.memberIdx;
     const title = req.body.title;
