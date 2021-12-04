@@ -17,13 +17,15 @@
 + 소셜플랫폼처럼 게시글을 올리기, 댓글달기, 좋아요 누르기 구현
 
 ## ERD
-![ERD](/image/ERD1.png)
+![ERD](/image/ERD.png)
 
 ## 구동 화면
   ### 메인 화면1
 
-![main1](/image/main1.png)
-  ### 메인 화면2
-
-![main2](/image/main2.png)
+![main1](/image/main.png)
   ### 로그인 화면
+
+![login](/image/login.png) 
+  
+  ### 관리자 화면
+![admin](/image/admin.png) 
