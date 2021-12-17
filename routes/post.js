@@ -1,6 +1,6 @@
 const express = require('express');
 const mysql = require('mysql');
-const config = require('../config/config.json');
+const config = require('../config/config');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const multer = require('multer');
@@ -14,10 +14,10 @@ const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         // 이미지 파일
         if (file.mimetype == "image/jpeg" || file.mimetype == "image/jpg" || file.mimetype == "image/png") {
-            cb(null, 'uploads/images')
+            cb(null, 'uploads')
             //텍스트 파일
         } else if (file.mimetype == "application/pdf" || file.mimetype == "application/txt" || file.mimetype == "application/octet-stream") {
-            cb(null, 'uploads/texts')
+            cb(null, 'uploads')
         }
     },
     // 파일이름 설정
@@ -49,6 +49,24 @@ router.route('/post/upload').post(upload.array('fileupload', 10), (req, res) => 
         });
     }
 });
+
+//
+router.route('/post/detail').get((req, res) => {
+    const idx = req.query.idx;
+
+    if (pool) {
+        postDetail(idx, (err, result) => {
+            if (err) {
+                res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
+                res.write('<h2>메인데이터 출력 실패 </h2>');
+                res.write('<p>데이터가 안나옵니다.</p>')
+                res.end();
+            } else {
+                res.send(result);
+            }
+        });
+    }
+})
 
 // 게시글 수정
 router.route('/post/edit').put(upload.array('fileupload', 10), (req, res) => {
@@ -129,7 +147,6 @@ router.route('/post/like/exist').get((req, res) => {
 
 
 
-
 // 게시글 등록
 const postUpload = function (memberIdx, content, file, hashTag, callback) {
     pool.getConnection((err, conn) => {
@@ -165,6 +182,17 @@ const postUpload = function (memberIdx, content, file, hashTag, callback) {
                     callback(null, true);
                 }
             })
+        }
+    });
+}
+
+// 게시글 디테일
+const postDetail = function (idx, callback) {
+    pool.getConnection((err, conn) => {
+        if (err) {
+            console.log(err);
+        } else {
+            
         }
     });
 }
@@ -231,6 +259,17 @@ const postDelete = function (idx, callback) {
                     });
                 }
                 conn.query('delete from img where postIdx = ?', [idx], (err, result) => {
+                    conn.query('delete from post_like where postIdx = ?', [idx]);
+                
+                    conn.query('select idx from reply where postIdx = ?', [idx], (err, result) => {
+                        if(err) {
+                            console.log(err);
+                        }
+                        for (let i = 0; i < result.length; i++) {
+                            conn.query('delete from reply_like where replyIdx = ?', [result[0].idx]);          
+                        }
+                    })
+
                     conn.query('delete from reply where postIdx = ?', [idx]);
                     conn.query('delete from post_hashtag where postIdx = ?', [idx]);
                     conn.query('delete from post where idx = ?', [idx]);
