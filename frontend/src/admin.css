@@ -1,26 +1,9 @@
-ul {
-    list-style:none;
-    display: flex;
-}
-ul li {
-    padding: 0.6rem;
-    font-size: 1.8rem;
-    color: #888;
-    cursor: pointer;
-    font-weight: bold;
-}
 
 /* 페이지네이션 css */
-.detail-link {
-    text-decoration: none;
-}
-.fa-angle-left, .fa-angle-double-left, .fa-angle-right, .fa-angle-double-right {
-    font-size: 2.1rem;
-}
-.pagination {
-    margin-left: 44rem;
-    padding: 1rem;
-}
+.detail-link { text-decoration: none; }
+.fa-angle-left, .fa-angle-double-left, .fa-angle-right, .fa-angle-double-right { font-size: 2.1rem; }
+.pagination { padding: 1rem; }
+.pagination ul{ padding:0; justify-content: center; }
 
 /* 팝업 */
 .mw { position:fixed; top:0; left:0; width:100%; height:100%; z-index: 1000; }

@@ -1,54 +1,34 @@
 const express = require('express');
 const mysql = require('mysql');
-const config = require('../config/config');
+const config = require('../config/config.json');
 const bodyParser = require('body-parser');
-const { call } = require('body-parser');
 const pool = mysql.createPool(config);
 const router = express.Router()
 router.use(bodyParser.urlencoded({ extended: false }))
 
 // 문의하기
 router.route('/inquiry').post((req, res) => {
-    const name = req.body.name;
-    const title = req.body.title;
-    const content = req.body.content;
-    const type = req.body.type;
-    console.log(`title:${title}, content:${content}, type:${type}, name:${name}`);
+    const memberIdx = req.query.memberIdx;
+    const title = req.query.title;
+    const content = req.query.content;
+    const type = req.query.type;
+    const sql = 'insert into inquiry(memberIdx, title, content, type) values (?,?,?,?)';
+    const data = [memberIdx, title, content, type];
+    console.log(`memberIdx:${memberIdx}, title:${title}, content:${content}`);
 
-    if(pool){
-        inquiry(name, title, content, type, (err, result)=>{
-            if(err){
-                console.log(err)
-                res.send(false);
-                res.end();
-            }else{
-                console.log(result);
-                res.send(true)
-                res.end();
-            }
-        })
-    }
-});
-const inquiry = function(name, title, content, type, callback){
-    pool.getConnection((err, conn)=>{
-        if(err){
-            console.log(err)
-        }else{
-            conn.query('select idx, name from member where name=?',[name], (err, result)=>{
-                console.log(result[0].idx);
-                conn.query('insert into inquiry(memberIdx, title, content, type) values(?,?,?,?)',[result[0].idx, title, content, type], (err1, result1)=>{
-                    conn.release();
-                    if(err1){
-                        callback(err, null);
-                        return;
-                    }else{
-                        callback(null, true);
-                    }
-                })
-            })
+    pool.query(sql, data, (err, rows, fields) => {
+        if (err) {
+            console.log('err : ' + err);
+            res.writeHead('200', { 'content-type': 'text/html;charset=utf-8' });
+            res.write('<h2>문의 실패!</h2>');
+            res.write('<p>오류가 발생했습니다</p>');
+            res.end();
+        } else {
+            console.log(rows);
+            res.json(true);
         }
     })
-}
+});
 
 // 문의 내용 확인
 router.route('/inquiry_che').get((req, res) => {
@@ -56,15 +36,17 @@ router.route('/inquiry_che').get((req, res) => {
     const title = req.body.title;
     const contet = req.body.content;
     const type = req.body.type;
+    const type2 = req.body.type2;
 
     if(pool){
         inquiry_chk((err, result) => {
             if (err) {
-                res.send(false)
+                res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
+                res.write('<h2>메인데이터 출력 실패 </h2>');
+                res.write('<p>데이터가 안나옵니다.</p>')
                 res.end();
             } else {
-                res.send(true);
-                res.end();
+                res.send(result);
             }
         })
     }
@@ -75,7 +57,7 @@ const inquiry_chk = function(callback){
         if(err){
             console.log(err);
         }else{
-            conn.query('select memberIdx, title, content, type from inquiry', (err, result)=>{
+            conn.query('select memberIdx, title, content, type, type2 from inquiry', (err, result)=>{
                 conn.release();
                 if(err){
                     callback(err, null);

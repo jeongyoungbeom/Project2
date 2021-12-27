@@ -10135,6 +10135,11 @@ sockjs@^0.3.21:
     uuid "^3.4.0"
     websocket-driver "^0.7.4"
 
+soket.io@0.0.1-security:
+  version "0.0.1-security"
+  resolved "https://registry.yarnpkg.com/soket.io/-/soket.io-0.0.1-security.tgz#0c144d468425a3e89031b8be5e668b00f55fd423"
+  integrity sha512-BMlCJfgZA5gKjP/MG08ydjx5RceBEGO++mv8dGq8RQaFE77Ilk1m8limVGOqLnmXMc8xmwcAqFwp8McpvqgF1g==
+
 sort-keys@^1.0.0:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/sort-keys/-/sort-keys-1.1.2.tgz#441b6d4d346798f1b4e49e8920adfba0e543f9ad"

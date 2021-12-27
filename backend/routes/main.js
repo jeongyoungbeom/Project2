@@ -79,7 +79,7 @@ router.route('/main/place').get((req, res) => {
             if (err) {
                 res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
                 res.write('<h2>메인데이터 출력 실패 </h2>');
-                res.write('<p>데이터가 안나옵니다.</p>')
+                res.write('<p>데이터가 안나옵니다.</p>');
                 res.end();
             } else {
                 res.send(result);
@@ -175,7 +175,7 @@ const main = function (idx, callback) {
             const sql3 = 'select count(*) as friendCnt from friend where memberIdx = ?;'
             const sql3s = mysql.format(sql3, idx);
 
-            const sql4 = 'select img, name from member where idx in (select f.friendIdx from member as m join friend as f on m.idx = f.memberIdx where m.idx = ?);';
+            const sql4 = 'select idx, img, name from member where idx in (select f.friendIdx from member as m join friend as f on m.idx = f.memberIdx where m.idx = ?);';
             const sql4s = mysql.format(sql4, idx);
 
             conn.query(sql1s + sql2s + sql3s + sql4s, (err, result) => {
@@ -222,6 +222,7 @@ const mainChat = function (idx, callback) {
                 conn.release();
                 if (err) {
                     callback(err, null);
+                    console.log(err);
                     return;
                 } else {
                     callback(null, result);
@@ -248,7 +249,7 @@ const friendList = function (idx, callback) {
         if (err) {
             console.log(err);
         } else {
-            conn.query('select m.idx, m.img, m.name, m.message from friend as f join member as m on m.idx = f.friendIdx where f.memberIdx = ?;', [idx], (err, result) => {
+            conn.query('select m.idx, m.img, m.email, m.name, m.message from friend as f join member as m on m.idx = f.friendIdx where f.memberIdx = ?;', [idx], (err, result) => {
                 conn.release();
                 if (err) {
                     callback(err, null);
@@ -269,7 +270,7 @@ const invitation = function (invitationCode, idx, callback) {
         } else {
             let flag = false;
             let fIdx = null;
-            conn.query('select idx, name, message, img from member where code = ?;', [invitationCode], (err, result1) => {
+            conn.query('select idx, name, message, img, email from member where code = ?;', [invitationCode], (err, result1) => {
                 if (result1 != "") fIdx = result1[0].idx; 
                 conn.query('select exists (select idx from friend where memberIdx = ? and friendIdx = ? limit 1) as success;', [idx, fIdx], (err, result2) => {
                     if (result2[0].success == 1) flag = true;

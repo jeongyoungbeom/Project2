@@ -47,19 +47,9 @@
 
                 $('#sendButton2').on('click', function(event){
                     const roomName = $('#roomName').val(); // 방 idx
-                    if(socket == undefined){
-                        alert('서버에 연결되지 않았습니다. 서버를 연결하세요');
-                        return;
-                    }
                     socket.emit('joinRoom', roomName);
                     console.log(`방 ${roomName}입장`);
                 })
-
-                $('#leaveButton').on('click', function(event){
-                    const roomname = $('#roomName').val();
-                    socket.emit('leaveRoom', roomname);
-                });
-                
             })
 
             function connectToServer(){
@@ -71,15 +61,13 @@
                     console.log('웹소켓 서버에 연결되었습니다.')
                     socket.on('message', function(message){
                         console.log(JSON.stringify(message));
-                        println(`${message.sender} : ${message.data}`)
+                        println(`${message.sender} ${message.data}`)
                     })
-
                 });
             }
             function println(data){
                 $('#result').append(`<p>${data}</p>`);
             }
-            
         </script>
 </head>
 
@@ -90,14 +78,14 @@
     <p><input type="button" id="connectButton" value="서버접속"></p>
     <hr>
 
-    <p>방 이름 : <input type="text" id="roomName"> <input type="button" id="sendButton2" value="입장"></p>
+    <p>방 이름 : <input type="text" id="roomName"></p>
+    <p><input type="button" id="sendButton2" value="입장"></p>
 
-    <p>보내는 사람 이름 : <input type="text" id="sender"></p>
+    <p>보내는 사람 아이디 : <input type="text" id="sender"></p>
     <p>메세지 <input type="text" id="data"> <input type="button" id="sendButton" value="입력"></p>
 
     <p>결과</p>
     <div id="result"></div>
-    <input type="button" value="나가기" id="leaveButton">
 </body>
 
 </html>

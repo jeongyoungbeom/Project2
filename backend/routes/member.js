@@ -13,7 +13,6 @@ const nodemailer = require('nodemailer'); // 임시 비밀번호 보내기
 const multer = require('multer'); // 이미지 업로드
 const { ignore } = require('nodemon/lib/rules');
 const cors = require('cors');
-const { call } = require('body-parser');
 
 const app = express();
 const router = express.Router(); // 라우터 사용(특정 경로로 들어오는 요청에 대해 함수를 수행 시킬 수 있는 기능을 express가 제공)
@@ -35,7 +34,6 @@ router.use(session({
     }
 }));
 
-
 app.set('view engine', 'ejs'); // 화면 engine을 ejs로 설정
 app.set('views', '../views'); // view 경로 설정 
 
@@ -43,16 +41,17 @@ app.set('views', '../views'); // view 경로 설정
 const pool = mysql.createPool(config);
 
 // 회원가입
+// 회원가입
 // http://127.0.0.1:3000/member/regist (post)
 router.route('/member/regist').post((req, res) => {
-    const email = req.body.email;
-    const userPw = req.body.userPw;
-    const name = req.body.name;
-    const tel = req.body.tel;
-    const code = req.body.code;
-    const gender = req.body.gender;
-    const agreement1 = req.body.agreement1;
-    const agreement2 = req.body.agreement2;
+    const email = req.query.email;
+    const userPw = req.query.userPw;
+    const name = req.query.name;
+    const tel = req.query.tel;
+    const code = req.query.code;
+    const gender = req.query.gender;
+    const agreement1 = req.query.agreement1;
+    const agreement2 = req.query.agreement2;
 
     console.log(`email: ${email}, userpw:${userPw}, name:${name}, tel:${tel}, code:${code}, agreement1:${agreement1}, agreement2:${agreement2}, gender:${gender}`);
 
@@ -76,26 +75,32 @@ const joinMember = function (email, userPw, name, tel, gender, code, agreement1,
             console.log(err);
         } else {
             const encryptedPassword = bcrypt.hashSync(userPw, saltRounds) // 비밀번호 암호화 
-            const sql = conn.query('insert into member(email, userPw, name, tel,gender, code, agreement1, agreement2) values (?, ?, ?, ?, ?, ?, ?,?)', [email, encryptedPassword, name, tel, gender, code, agreement1, agreement2], (err, result) => {
-                conn.release();
-                if (err) {
-                    callback(err, null);
-                    return;
-                } else {
-                    console.log("가입완료!");
-                    callback(null, result);
-                }
-            });
-
+            if (agreement1 == 'Y' && agreement2 == 'Y') {
+                const sql = conn.query('insert into member(email, userPw, name, tel,gender, code, agreement1, agreement2) values (?, ?, ?, ?, ?, ?, ?,?)', [email, encryptedPassword, name, tel, gender, code, agreement1, agreement2], (err, result) => {
+                    conn.release();
+                    if (err) {
+                        callback(err, null);
+                        return;
+                    } else {
+                        console.log("가입완료!");
+                        callback(null, result);
+                    }
+                });
+            } else {
+                callback('약관동의를 체크해주세요');
+            }
         }
     });
 }
 
 // 로그인 
+router.route('/member/login').get((req, res) => {
+    res.render('login.ejs');
+}); 
 router.route('/member/login').post((req,res)=>{
-    const idx = req.body.idx;
-    const email = req.body.email;
-    const userPw = req.body.userPw ;
+    const email = req.query.email;
+    const userPw = req.query.userPw;
+    // const encryptedPassword = bcrypt.hashSync(userPw, saltRounds) // 비밀번호 암호화
 
     console.log(`email : ${email}, userPw:${userPw}`);
 
@@ -103,7 +108,6 @@ router.route('/member/login').post((req,res)=>{
         LoginMember(email, userPw, (err, result)=>{
             if(err){
                 console.log(err);
-                console.log('dmdkdkdk')
                 res.send(false);
             } else {
                 console.log(result);
@@ -118,13 +122,13 @@ router.route('/member/login').post((req,res)=>{
                         let dataLoading = true;
                         if(result[0] != null){
                             req.session.user = {
-                                idx : result[0].idx,
+                                idx: result[0].idx,
                                 email: result[0].email,
                                 name: "first",
                                 authorized: true
                             };
                             res.cookie('three', result[0].idx);
-                            res.json(true)
+                            res.json(result[0].idx);    
                             const hi  = new Promise((resolve, reject)=>{
                                 if(dataLoading){
                                     resolve("true");
@@ -149,6 +153,11 @@ router.route('/member/login').post((req,res)=>{
         })
     }
 })
+
+
+
+
+
 const LoginMember = function(email, userPw, callback){
     pool.getConnection((err, conn)=>{
         if(err){
@@ -160,7 +169,6 @@ const LoginMember = function(email, userPw, callback){
                     callback(err, null);
                     return;
                 }else{
-                    console.log(result);
                     if(result == ""){
                         callback(null, false);
                     }else{
@@ -172,10 +180,16 @@ const LoginMember = function(email, userPw, callback){
     })
 }
 
+// 쿠키 값 가져오기
+router.route('/getCookie').get((req, res)=>{
+    res.send(req.cookies.three);
+})
+
 
 // 로그아웃
 router.route('/member/logout').get((req, res) => {
     res.clearCookie("first");
+    res.clearCookie("three");
     req.session.destroy(function (err, result) {
         if (err) console.err('err : ', err);
         res.send(result);
@@ -184,17 +198,21 @@ router.route('/member/logout').get((req, res) => {
 
 
 // 이메일 찾기 
-router.route('/member/findId').get((req, res) => {
+router.route('/member/findId').post((req, res) => {
     const tel = req.query.tel;
     const email = req.query.email;
     console.log(tel);
 
-    pool.query('select tel, email from member where tel=?', [tel], (err, data) => {   
+    pool.query('select tel, email from member where tel=?', [tel], (err, data) => {
+        console.log(tel);
+        console.log(data);
+        console.log(data[0]);        
 
         if (err) {
             console.log(err);
         } else {
             if(data == ""){
+                console.log('ddd');
                 res.send(false);
                 res.end();
                 return
@@ -237,30 +255,48 @@ function emailSecurity(data) {
 }
 
 // 비밀번호 찾기
-router.route('/member/findPassword').get((req, res) => {
+router.route('/member/findPassword').post((req, res) => {
     const tel = req.query.tel;
     const email = req.query.email;
-    const userPw = req.query.userPw;
+    const userPw = req.body.userPw;
 
 
     pool.query('select tel,email,userPw from member where tel=? and email=?', [tel, email], (err, data) => {
         console.log(data);
         if (err) {
             console.log(err);
-            res.send(false);
+            console.log('비밀번호 찾기 실패');
+            res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
+            res.write('<h2>아이디 또는 비밀번호를 확인해주세요.</h2>');
             res.end();
         } else {
-            var variable = "0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z".split(",");
-            var randomPassword = createCode(variable, 8);
+            var variable = "0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,!,@,#,$,%,^,&,*".split(",");
 
-            function createCode(objArr, iLength) {
-                var variable = objArr;
+            var number ="0,1,2,3,4,5,6,7,8,9".split(",");
+            var eng ="a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z".split(",");
+            var code ="!,@,#,$,%".split(",");
+            
+            var randomPassword = createCode(number,eng,code, 3,3,2);
+
+
+            function createCode(objArr1,objArr2,objArr3, iLength,xLength,kLength) {
+                var variable1 = objArr1;
+                var variable2 = objArr2;
+                var variable3 = objArr3;
+
                 var randomStr = "";
                 for (var j = 0; j < iLength; j++) {
-                    randomStr += variable[Math.floor(Math.random() * variable.length)];
+                    randomStr += variable1[Math.floor(Math.random() * variable1.length)];
+                }
+                for (var a = 0; a < xLength; a++) {
+                    randomStr += variable2[Math.floor(Math.random() * variable2.length)];
+                }
+                for (var c = 0; c < kLength; c++) {
+                    randomStr += variable3[Math.floor(Math.random() * variable3.length)];
                 }
                 return randomStr
             }
+
 
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
@@ -273,7 +309,7 @@ router.route('/member/findPassword').get((req, res) => {
             });
             const emailOptions = { // 옵션값 설정
                 from: 'wd4537syj@nsu.ac.kr',
-                to: 'wd4537syj@naver.com',
+                to: data[0].email,
                 subject: 'Us에서 임시비밀번호를 알려드립니다.',
                 html:
                     "<h1 >Us에서 새로운 비밀번호를 알려드립니다.</h1> <h2> 비밀번호 : " + randomPassword + "</h2>"
@@ -288,10 +324,12 @@ router.route('/member/findPassword').get((req, res) => {
                         SendMember(randomPassword, email, (err, result) => {
                             if (err) {
                                 console.log(err);
-                                res.send(false)
+                                res.writeHead('200', { 'content-type': 'text/html;charset=utf-8' });
+                                res.write('<h2>비밀번호 업데이트 실패!</h2>');
+                                res.write('<p>수정중 오류가 발생했습니다</p>');
                                 res.end();
                             } else {
-                                res.send(true)
+                                res.send(result)
                             }
                         })
                     }
@@ -313,7 +351,7 @@ const SendMember = function (randomPassword, email, callback) {
                     console.log(err);
                     return;
                 } else {
-                    callback(null, true);
+                    callback(null, result);
                 }
             })
         }
@@ -322,59 +360,65 @@ const SendMember = function (randomPassword, email, callback) {
 
 // 비밀번호 변경
 router.route('/member/ComparePassword').post((req, res) => {
-    const userPw = req.body.userPw;
-    const userPw2 = req.body.userPw2;
-    const email = req.body.email;
-    console.log(`userPw : ${userPw}, userPw2:${userPw2}, email:${email}`);
+    const userPw = req.query.userPw;
+    const userPw2 = req.query.userPw2;
+    const idx = req.query.idx;
+    console.log(`userPw : ${userPw}, userPw2:${userPw2}, idx:${idx}`);
 
     if (pool) {
-        UpdatePassword(userPw, userPw2, email, (err, result) => {
+        UpdatePassword(userPw, userPw2, idx, (err, result) => {
             if (err) {
                 console.log(err);
-                res.send(false)
+                res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
+                res.write('<h2>비밀번호 변경 실패!</h2>');
+                res.write('<p>오류가 발생했습니다</p>');
                 res.end();
             } else {
-                res.send(true)
+                res.send(result)
             }
         })
     }
 
 })
-const UpdatePassword = function (userPw, userPw2, email, callback) {
+const UpdatePassword = function (userPw, userPw2, idx, callback) {
     pool.getConnection((err, conn) => {
         if (err) {
             console.log(err);
         } else {
-            console.log('이건 되나?');
-            if (userPw != userPw2) {
-                console.log(userPw)
-                console.log(userPw2)
-                const encryptedPassword = bcrypt.hashSync(userPw2, saltRounds) // 비밀번호 암호화
-                console.log(encryptedPassword)
-                const sql2 = conn.query('update member set userPw=? where email=?', [encryptedPassword, email], (err, result) => {
-                    conn.release();
-                    if (err) {
-                        console.log(err);
-                        return;
-                    } else {
-                        callback(null, result);
+            conn.query('select userPw from member where idx=?',[idx], (err1, result1)=>{
+                console.log(result1);
+                if(bcrypt.compareSync(userPw, result1[0].userPw) == false){
+                    console.log(bcrypt.compareSync(userPw, result1[0].userPw))
+                    console.log('password 틀림')
+                    callback(null, false);
+                    return;
+                } else {
+                    console.log('패스워드 맞음');
+                    if(userPw != userPw2){
+                        const encryptedPassword = bcrypt.hashSync(userPw2, saltRounds) // 비밀번호 암호화
+                        console.log(encryptedPassword)
+                        conn.query('update member set userPw=? where idx=?', [encryptedPassword, idx], (err, result) => {
+                            conn.release();
+                            console.log(result);
+                            if(err){
+                                callback(null, false);
+                                return;
+                            }else{
+                                callback(null, result);
+                            }
+                        })
                     }
-                })
-            } else {
-                console.log('비밀번호 혹은 이메일 확인!');
-            }
+                }
+            })
         }
     })
 }
-// 순이한테 확인할꺼면 하고 말꺼면 말고
-
 
 
 // 정보 수정
 // 기존 데이터를 불러오는 곳
 router.route('/member/edit').get((req, res)=>{
-    const idx = req.body.idx;
-    console.log(`idx : ${idx}`)
+    const idx = req.query.idx;
 
     if(pool){
         edit(idx, (err, result)=>{
@@ -405,6 +449,7 @@ const edit = function(idx,callback){
         }
     })
 }
+
 // 여기가 정보 수정하는곳
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -416,12 +461,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 router.route('/member/editMember').post(upload.single('img'), async (req, res) => {
-    const img = req.body.img;
-    const email = req.body.email;
-    const name = req.body.name;
-    const tel = req.body.tel;
-    const message = req.body.message;
-    const gender = req.body.gender;
+    const img = req.query.img;
+    const email = req.query.email;
+    const name = req.query.name;
+    const tel = req.query.tel;
+    const message = req.query.message;
+    const gender = req.query.gender;
 
     console.log(`img : ${img}, email:${email}, name:${name}, tel:${tel}, message:${message}, gender:${gender}`);
     if(pool){
@@ -452,9 +497,7 @@ const editMember = function (img, name, tel, message, gender, email, callback) {
 
         }
     })
-}
-
-
+} 
 
 // 이미지 변경 
 // router.route('/upload').get((req, res) => {
@@ -474,34 +517,36 @@ const editMember = function (img, name, tel, message, gender, email, callback) {
 
 
 // 정보 삭제(탈퇴)
-// http://127.0.0.1:3001/member/delete (delete)
-router.route('/member/delete').delete((req, res) => {
-    const email = req.body.email;
-
-    console.log(`email : ${email}`);
+// http://127.0.0.1:3000/member/delete (delete)
+router.route('/member/delete').get((req, res) => {
+    const idx = req.query.idx;
 
     if (pool) {
-        deleteMember(email, (err, result) => {
+        deleteMember(idx, (err, result) => {
             if (err) {
-                res.send(false)
+                res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
+                res.write('<h2>회원삭제 실패!</h2>');
+                res.write('<p>오류가 발생했습니다</p>');
                 res.end();
             } else {
                 if (result.deletedCount > 0) {
-                    res.send(false)
+                    res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
+                    res.write('<h2>회원 삭제 실패!</h2>');
+                    res.write('<p>회원 삭제 실패하였습니다.</p>');
                     res.end();
                 } else {
-                    res.send(true)
+                    res.send(result)
                 }
             }
         });
     }
 });
-const deleteMember = function (email, callback) {
+const deleteMember = function (idx, callback) {
     pool.getConnection((err, conn) => {
         if (err) {
             console.log(err);
         } else {
-            const sql = conn.query('delete from member where email=?', [email], (err, result) => {
+            const sql = conn.query('delete from member where idx=?', [idx], (err, result) => {
                 conn.release();
                 if (err) {
                     callback(err, null);
@@ -514,11 +559,6 @@ const deleteMember = function (email, callback) {
         }
     });
 }
-
-// 쿠키 값 가져오기
-router.route('/getCookie').get((req, res)=>{
-    res.send(req.cookies.three);
-})
 
 
 module.exports = router

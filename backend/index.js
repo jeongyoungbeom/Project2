@@ -1,3 +1,4 @@
+
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
@@ -25,106 +26,63 @@ app.use(replyRouter);
 app.use(chatRouter);
 app.use(inquiryRouter);
 
+const io   = require('socket.io')(http, {
+    cors: {
+        origin: ["http://localhost:3000"],
+        methods:["GET","POST"],
+        credentials :true
+    }
+});
 
-// app.use(logger('dev'));
-// app.use(cors());
-// app.use('/public', express.static(path.join(__dirname, 'public')));
+http.listen(3001, ()=>{
+    console.log('3001번포트로 실행중');
+});
 
-// 서버접속 알아서
-// 방 참가 
-
-const io = require('socket.io')(http);
-
-io.sockets.on('connection', (socket) => {
+io.sockets.on('connection', (socket) =>{
     // 방 조인
-    socket.on('joinRoom', function (room) {   // joinRoom을 클라이언트가 emit 했을 시
-        let roomName = room;
-        socket.join(roomName);    // 클라이언트를 msg에 적힌 room으로 참여 시킴
-
-        pool.getConnection((err, conn) => {
-            if (err) {
-                console.log(err)
-            } else {
-                conn.query('select title from room where title=?',[roomName], (err, result) => {
-                    if(result == ""){
-                        conn.query('insert into room(title, type) values (?,?)', [roomName, '일반'], (err1, result1) => {
-                            if (err1) {
-                                console.log(err1);
-                            } else {
-                                console.log(1);
-                            }
-                        })
-                    }else{
-                        console.log(0) // 0 : 실패 , 1: 성공
-                    }
-                })
-            }
-        })
+    socket.on('joinRoom', (idx) => {     // joinRoom을 클라이언트가 emit 했을 시    // ({idx, room})
+        console.log(idx, '조인');
+        socket.join(idx);    // 클라이언트를 msg에 적힌 room으로 참여 시킴
     });
 
-    // 여기서 질문1) 클라이언트쪽에는 db에 이름이 없는데 대화창이 나오고 여긴 db에 이름이 없으면 오류가 뜨는데 이건 어떻게 해야하는지 
-    // 질문2) 여기도 res.send(true)이런식으로 보내야하는지 아님 이렇게 디비 연결하는게 맞는지
-    socket.on('message', function (msg) {       // 클라이언트가 채팅 내용을 보냈을 시
-        // 전달한 roomName에 존재하는 소켓 전부에게 message라는 이벤트 emit
-        io.to(msg.roomName).emit('message', msg);
+    socket.on('message', function(msg) {       // 클라이언트가 채팅 내용을 보냈을 시
+        // 전달한 roomName에 존재하는 소켓 전부에게 broadcast라는 이벤트 emit
         console.log(msg);
+        io.to(msg.idx).emit('send', msg); 
+        console.log('지나가라');
         pool.getConnection((err, conn)=>{
             if(err){
                 console.log(err);
             }else{
-                conn.query('select idx from room where title=?', [msg.roomName], (err,result)=>{
-                    conn.query('select idx from member where name=?',[msg.sender],(err1,result1)=>{
-                        conn.query('insert into chat(roomIdx, memberIdx, content) values (?,?,?)',[result[0].idx, result1[0].idx, msg.data], (err2, result2)=>{
-                            conn.query('insert into room_mem(roomIdx, memberIdx) values(?,?)', [result[0].idx, result1[0].idx], (err3, result3)=>{
-                                if(err3){
-                                    console.log(err3);
-                                }else{
-                                    console.log(result3);
-                                    console.log('======== success =====');
-                                }
-                            })
-                        })
-                    });
+                conn.query('insert into chat(roomIdx, memberIdx, content) values (?,?,?)',[msg.idx, msg.memberIdx, msg.data], (err, result)=>{
+                    if(err){
+                        console.log(err);
+                    }else{
+                        console.log(result);
+                        console.log('======== success =====');
+                    }
                 })
             }
         })
     })
+
+    socket.on('disconnect',()=>{
+        console.log('유저가 나갔습니다.');
+    })
+
     //socket.broadcast.to(room_id).emit('msgAlert',data); //자신 제외 룸안의 유저
     //socket.in(room_id).emit('msgAlert',data); //broadcast 동일하게 가능 자신 제외 룸안의 유저
     //io.of('namespace').in(room_id).emit('msgAlert', data) //of 지정된 name space의 유저의 룸
-
-    // 방 교체 
-
-    
-
-    // 방 나가기(이런식으로 하는게 맞는지 오빠한테 물어보기)
-    socket.on('leaveRoom', (room) => {
-        let leave_roomId = room;
-        console.log(leave_roomId);
-        socket.leave(leave_roomId);
-        pool.getConnection((err, conn) =>{
-            if(err){
-                console.log(err)
-            }else{
-                conn.query('select idx from room where title=?',[leave_roomId], (err,result)=>{
-                    conn.query('delete from chat where roomIdx=?', [result[0].idx], (err1, result1)=>{
-                        conn.query('delete from room_mem where roomIdx=?',[result[0].idx], (err2, result2)=>{
-                            conn.query('delete from room where idx=?',[result[0].idx], (err3, result3)=>{
-                                if(err3){
-                                    console.log(err3);
-                                }else{
-                                    console.log(result3);
-                                    console.log('최종 삭제 완료');
-                                }
-                            })
-                        })
-                    })
-                })
-            }
-        })
-    });
 });
 
-http.listen(3001, () => {
-    console.log('3001번포트로 실행중');
-});
+
+app.use(memberRouter);
+app.use(mainRouter);
+app.use(postRouter);
+app.use(adminRouter);
+app.use(replyRouter);
+app.use(chatRouter);
+app.use(inquiryRouter);
+
+
+
