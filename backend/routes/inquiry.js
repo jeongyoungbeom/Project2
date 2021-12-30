@@ -3,32 +3,66 @@ const mysql = require('mysql');
 const config = require('../config/config.json');
 const bodyParser = require('body-parser');
 const pool = mysql.createPool(config);
-const router = express.Router()
+const router = express.Router();
+const cors = require('cors');
+
 router.use(bodyParser.urlencoded({ extended: false }))
+router.use(cors({origin : 'http://localhost:3000', credentials : true, methods : "put,get,post,delete,options"}));
 
 // 문의하기
 router.route('/inquiry').post((req, res) => {
-    const memberIdx = req.query.memberIdx;
-    const title = req.query.title;
-    const content = req.query.content;
-    const type = req.query.type;
-    const sql = 'insert into inquiry(memberIdx, title, content, type) values (?,?,?,?)';
-    const data = [memberIdx, title, content, type];
-    console.log(`memberIdx:${memberIdx}, title:${title}, content:${content}`);
+    const memberIdx = req.body.memberIdx;
+    const respondent = req.body.respondent;
+    const title = req.body.title;
+    const content = req.body.content;
+    const type = req.body.type;
 
-    pool.query(sql, data, (err, rows, fields) => {
+    if (pool) {
+        inquiry(memberIdx, title, content, type, respondent, (err, result) => {
+            if (err) {
+                res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
+                res.write('<h2>메인데이터 출력 실패 </h2>');
+                res.write('<p>데이터가 안나옵니다.</p>')
+                res.end();
+            } else {
+                res.send(result);
+            }
+        })
+    }
+})
+
+
+//문의 하기
+const inquiry = function (memberIdx, title, content, type, respondent, callback) {
+    pool.getConnection((err, conn) => {
         if (err) {
-            console.log('err : ' + err);
-            res.writeHead('200', { 'content-type': 'text/html;charset=utf-8' });
-            res.write('<h2>문의 실패!</h2>');
-            res.write('<p>오류가 발생했습니다</p>');
-            res.end();
+            console.log(err);
         } else {
-            console.log(rows);
-            res.json(true);
+            console.log(respondent)
+            if (respondent == undefined) {
+                conn.query('insert into inquiry(memberIdx, title, content, type) values (?,?,?,?)', [memberIdx, title, content, type], (err, result) => {
+                    conn.release();
+                    if (err) {
+                        callback(err, null);
+                        return;
+                    } else {
+                        callback(null, result);
+                    }
+                })
+            } else {
+                conn.query('insert into inquiry(memberIdx, title, content, type, respondent) values (?,?,?,?,?)', [memberIdx, title, content, type, respondent], (err, result) => {
+                    conn.release();
+                    if (err) {
+                        callback(err, null);
+                        return;
+                    } else {
+                        callback(null, result);
+                    }
+                })
+            }
         }
-    })
-});
+    });
+}
 
 // 문의 내용 확인
 router.route('/inquiry_che').get((req, res) => {

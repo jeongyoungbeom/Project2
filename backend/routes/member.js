@@ -93,10 +93,6 @@ const joinMember = function (email, userPw, name, tel, gender, code, agreement1,
     });
 }
 
-// 로그인 
-router.route('/member/login').get((req, res) => {
-    res.render('login.ejs');
-}); 
 router.route('/member/login').post((req,res)=>{
     const email = req.query.email;
     const userPw = req.query.userPw;
@@ -307,7 +303,7 @@ router.route('/member/findPassword').post((req, res) => {
                     pass: 'syj30408!!',
                 },
             });
-            const emailOptions = { // 옵션값 설정
+            const emailOptions = (data[0].email) = { // 옵션값 설정
                 from: 'wd4537syj@nsu.ac.kr',
                 to: data[0].email,
                 subject: 'Us에서 임시비밀번호를 알려드립니다.',

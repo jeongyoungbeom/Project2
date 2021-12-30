@@ -201,7 +201,6 @@ const MainProfile = ({idx, param})=>{
     const onAddFriend = async() => { //추가 버튼
         if(addFriends!==null&&addFriends.info!==undefined){
             let plusFriend = await axios.post("http://localhost:3001/main/insert_friend?fIdx="+addFriends.info.idx+"&idx="+param)
-            console.log(plusFriend)
         }
         setAddF(null)
         setAddOn(!addOn);
@@ -209,6 +208,13 @@ const MainProfile = ({idx, param})=>{
     const onAddFriend2 = async() => { //추가 취소 버튼
         setAddF(null)
         setAddOn(!addOn);
+    }
+
+    // 채팅방 만들기 axios
+    const makeChatRoom = async (receiverIdx)=>{
+        await axios(`http://localhost:3001/main/insert_chat_room?receiverIdx=${receiverIdx}&senderIdx=${param}`).then((res)=>{
+            window.location.href = '/mainTalk?idx='+param;
+        });
     }
 
     //게시물 올리기 팝업1(업로드될 이미지 선택 팝업)
@@ -254,7 +260,6 @@ const MainProfile = ({idx, param})=>{
             }
         }).then((res)=>{
             alert('게시물이 등록되었습니다.');
-            console.log(res);
             window.location.href = '/main/'+idx+'?idx=' + param;
         });
     }
@@ -406,16 +411,23 @@ const MainProfile = ({idx, param})=>{
                     <div className="pop_sec2">
                         {list.length!==0?
                             list.map(listData=>(
-                                <div className="pop_sec2_box" onClick={()=>{window.location.href=`/main/${listData.idx}?idx=${param}`}}>
+                                <div className="pop_sec2_box">
                                     <div className="pop_sec2_friend_box">
-                                        <div className="pop_sec2_friend_profileImg_box">
-                                            <img className="pop_sec2_friend_profile_img" src={listData.img!==null?"/"+listData.img:'/img/admin/noneImg.png'} alt="프로필 이미지"/>
+                                        <div className="pop_sec2_friend_profileImg_box" onClick={()=>{window.location.href=`/main/${listData.idx}?idx=${param}`}}>
+                                            <img className="pop_sec2_friend_profile_img" src={listData.img!==null&&listData.img!==''?"/"+listData.img:'/img/blank_profile.png'} alt="프로필 이미지"/>
                                         </div>
                                         <div className="pop_sec2_friend_detail_box">
                                             <div className="pop_sec2_friend_detail_n"><p className="detail_n">{listData.name}</p></div>
                                             <div className="pop_sec2_friend_detail_m"><p className="detail_m">{listData.message!==null?listData.message:'-'}</p></div>
                                         </div>
                                     </div>
+                                    {
+                                        idx===param?
+                                            <div className="chat_img_box" onClick={()=>{ makeChatRoom(listData.idx); }}>
+                                                <img className="chat_img" src="/img/message.png" alt="채팅방 이미지"/>
+                                            </div>
+                                        : ''
+                                    }
                                 </div>
                             ))
                             : <div className="pop_no_friend_box">등록된 친구가 없습니다<br/>상단 버튼을 눌러 추가하세요</div>
@@ -431,7 +443,7 @@ const MainProfile = ({idx, param})=>{
         <MainProfileWrap>
             <div className="section1_box">
                 <div className="profile_img_box">
-                    <img className="profile_img" src={profile.info.img!==null?"/"+profile.info.img:'/img/blank_profile.png'} alt="profile"/>
+                    <img className="profile_img" src={profile.info.img!==null&&profile.info.img!==''?"/"+profile.info.img:'/img/blank_profile.png'} alt="profile"/>
                 </div>
                 <div className="profile_detail_box">
                     <div className="profile_layer1">
@@ -505,20 +517,22 @@ const MainProfile = ({idx, param})=>{
             </div>
             <div className="section3_box">
                 <div className="sec_post_container">
-                    <div className="sec_post_box">
-                        <div className="sec_post_img">
-                            <img className="sec3_img1" src="/img/post_img.png"/>
+                    <Link to={"/main/"+idx+"?idx="+param}>
+                        <div className="sec_post_box">
+                            <div className="sec_post_img">
+                                <img className="sec3_img1" src="/img/post_img.png"/>
+                            </div>
+                            <div className="sec_post_title">
+                                <p>게시물</p>
+                            </div>
                         </div>
-                        <div className="sec_post_title">
-                            <p>게시물</p>
-                        </div>
-                    </div>
+                    </Link>
                 </div>
                 {
                     idx===param ?
                     <>
                         <div className="sec_chat_container">
-                            <Link to={"/mainTalk?idx="+idx}>
+                            <Link to={"/mainTalk?idx="+param}>
                                 <div className="sec_chat_box">
                                     <div className="sec_chat_img">
                                         <img className="sec3_img2" src="/img/chat.png"/>
@@ -529,8 +543,8 @@ const MainProfile = ({idx, param})=>{
                                 </div>
                             </Link>
                         </div>
-                        <div className="sec_location_container">
-                            <Link to={"/mainMap?idx="+idx}>
+                        {/* <div className="sec_location_container">
+                            <Link to={"/mainMap?idx="+param}>
                                 <div className="sec_location_box">
                                     <div className="sec_location_img">
                                         <img className="sec3_img3" src="/img/location.png"/>
@@ -540,7 +554,7 @@ const MainProfile = ({idx, param})=>{
                                     </div>
                                 </div>
                             </Link>
-                        </div>
+                        </div> */}
                     </>
                     :
                     ''

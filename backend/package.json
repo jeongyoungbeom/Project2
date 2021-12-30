@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "nodemon",
-    "dev": "concurrently \"npm start --prefix C:/Users/jybeo/Desktop/us(종말)/frontend\" \"npm start\""
+    "dev": "concurrently \"npm start --prefix C:/Users/jybeo/Desktop/us(theEnd)/frontend\" \"npm start\""
   },
   "author": "",
   "license": "ISC",

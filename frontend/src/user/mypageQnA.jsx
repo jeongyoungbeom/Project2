@@ -67,7 +67,7 @@ const MyPageQnA = () =>{
     let [content, setContent] = useState('');
 
     // 신고 대상자
-    let [defendant, setDefendant] = useState({});
+    let [defendant, setDefendant] = useState(null);
 
     // 팝업
     const [modalOn, setModalOn] = useState(false); 
@@ -142,17 +142,26 @@ const MyPageQnA = () =>{
         
         if(type==='declaration'){
             korType += '신고하기';
+        } else {
             korType += '일반문의';
         }
-        let log = await axios.post('http://localhost:3001/inquiry?memberIdx='+param+"&title="+title+"&content="+content+"&type="+korType)
-        console.log(log);
-        if(log.data===true){
-            alert('문의가 등록되었습니다.');
+
+        console.log(defendant);
+
+        await axios({
+            method: "post",
+            url:`http://localhost:3001/inquiry`,
+            data: {
+                memberIdx: param,
+                title: title,
+                content: content,
+                type: korType,
+                respondent : defendant.idx
+            }
+        }).then(()=>{
+            alert('등록되었습니다.');
             window.location.reload();
-        }else{
-            alert('다시 입력해 주세요!')
-            window.location.reload();
-        }
+        });
     }
 
     const onOpenModal = (e) => {
@@ -181,7 +190,7 @@ const MyPageQnA = () =>{
                                     <p onClick={()=>{addDefendant(list)}} style={{cursor:"pointer"}}>{list.name} [ <span className="email">{list.email}</span> ]</p>
                                 ))
                                 :
-                                <p>신고할 친구가 존재하지 않습니다.<br/>상단의 신고 대상자 코드를 입력하세요</p>
+                                <p>신고할 친구가 존재하지 않습니다.</p>
                             :
                             <p onClick={()=>{addDefendant(codeFriend.info)}} style={{cursor:"pointer"}}>{codeFriend.info.name} [ <span className="email">{codeFriend.info.email}</span> ]</p>
                         }
@@ -193,14 +202,14 @@ const MyPageQnA = () =>{
 
     return (
         <>
-            <Header/>
+            <Header idx={param} param={param}/>
             <MyPageQnAWrap>
                 <div className="container">
                     <div>
                     <ul className="navBar">
                             <Link to={"/mypage?idx=" + param}><li className="menuLink ">프로필 편집</li></Link>
                             <Link to={"/mypagePw?idx=" + param}><li className="menuLink">비밀번호 변경</li></Link>
-                            <Link to={"/mypageLogin?idx=" + param}><li className="menuLink">로그인 활동</li></Link>
+                            {/* <Link to={"/mypageLogin?idx=" + param}><li className="menuLink">로그인 활동</li></Link> */}
                             <Link to={"/mypageQnA?idx=" + param}><li className="menuLink on">문의하기</li></Link>
                         </ul>
                     </div>
@@ -256,7 +265,7 @@ const MyPageQnA = () =>{
                                 </li>
                                 <li className="profileItem profileSelect firstItem">
                                     <div className="QnaTitle section1">문의유형</div>
-                                    <select name="category1" id="category1" onClick={selectType}>
+                                    <select name="category1" id="category1" onChange={selectType}>
                                         <option value="inquiry1">계정관리</option>
                                         <option value="inquiry2">로그인 활동</option>
                                         <option value="inquiry3">사용법 안내</option>
