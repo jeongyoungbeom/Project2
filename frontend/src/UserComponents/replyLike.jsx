@@ -21,13 +21,13 @@ const ReplyLike = ({replyIdx, memberIdx})=>{
         isLike===1 ? 
             <div className="like_box">
                 <button type="button" className="like_btn">
-                    <img className="like_img" src="/img/heart.png" alt="좋아요비활성화" onClick={handleClick}/>
+                    <img className="like_img" src="/img/user/favorite.svg" alt="좋아요비활성화" onClick={handleClick}/>
                 </button>
             </div>
         :
         <div className="like_box">
             <button type="button" className="like_btn">
-                <img className="like_img" src="/img/smile.png" alt="좋아요활성화" onClick={handleClick}/>
+                <img className="like_img" src="/img/user/favorite_border.svg" alt="좋아요활성화" onClick={handleClick}/>
             </button>
         </div>
     )

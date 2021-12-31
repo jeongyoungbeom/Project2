@@ -7,101 +7,26 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 
 const QuestionForm = styled.div`
-    overflow-x: hidden;
-    margin-left: 24rem;
+    overflow-x: hidden; margin-left: 24rem;
     ul { list-style:none; display: flex; }
     ul li { padding: 0.6rem; font-size: 1.8rem; background-color: none; color: #888; cursor: pointer; font-weight: bold; }
-    .form {
-        background-color: white;
-        margin: 13rem auto 10rem;
-        width: 112rem;
-        border-radius: 20px;
-        padding: 1.5rem 4rem;
-        box-shadow: 5px 5px 5px 5px rgb(210, 210, 210);
-    }
-    .title {
-        border-radius: 10px;
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #14c1c7;
-    }
-    .content-box {
-        border-radius: 10px;
-        padding-top: 2rem;
-    }
-    .content {
-        margin: 0;
-    }
-    input[type="text"] {
-        width: 30rem;
-        height: 3rem;
-        padding-left: 1rem;
-        background-color: white;
-        border: 2px solid #14c1c7;
-        border-radius: 5px;
-        box-shadow: 3px 3px 3px rgb(210,210,210);
-        caret-color: #14c1c7;
-    }
+    .form { ackground-color: white; margin: 13rem auto 10rem; width: 112rem; border-radius: 20px; padding: 1.5rem 4rem; box-shadow: 5px 5px 5px 5px rgb(210, 210, 210); }
+    .title { border-radius: 10px; font-size: 1.5rem; font-weight: bold; color: #14c1c7; }
+    .content-box { border-radius: 10px; padding-top: 2rem; }
+    .content { margin: 0; }
+    input[type="text"] { width: 30rem; height: 3rem; padding-left: 1rem; background-color: white; border: 2px solid #14c1c7; border-radius: 5px; box-shadow: 3px 3px 3px rgb(210,210,210); caret-color: #14c1c7; }
     input[type="text"]:focus { outline: none; border: 2px solid lightgray; }
-    input[type="button"] {
-        background-color: #14c1c7;
-        border: 1px solid white;
-        color: white;
-        width: 7rem;
-        height: 3.5rem;
-        border-radius: 5px;
-        box-shadow: 2px 2px 2px 2px rgb(210,210,210);
-        margin-left: 0.5rem;
-        font-size: 1.3rem;
-        cursor: pointer;
-    }
-    .search-box {
-        display: flex;
-        justify-content: space-between;
-    }
-    table {
-        text-align: center;
-        width: 100%;
-        border-collapse: collapse;
-        border: 2px solid #9b9b9b;
-        font-size: 1.4rem;
-    }
-    table th, table td {
-        border: 1px solid #9b9b9b;
-        height: 3.8rem;
-    }
-    table th {
-        background-color: rgb(248, 250, 252);
-    }
-    .fa-check-square {
-        font-size: 1.8rem;
-        color: #14c1c7;
-    }
-    .detail-link {
-        color: black; 
-    }
-    .detail-link:hover {
-        color: #14c1c7;
-        font-weight: bolder;  
-        font-size: 1.45rem; 
-        overflow:hidden;
-        text-overflow:ellipsis;
-        white-space:nowrap;
-    }
+    input[type="button"] { background-color: #14c1c7; border: 1px solid white; color: white; width: 7rem; height: 3.5rem; border-radius: 5px; box-shadow: 2px 2px 2px 2px rgb(210,210,210); margin-left: 0.5rem; font-size: 1.3rem; cursor: pointer; }
+    .search-box { display: flex; justify-content: space-between; }
+    table { text-align: center; width: 100%; border-collapse: collapse; border: 2px solid #9b9b9b; font-size: 1.4rem; }
+    table th, table td { border: 1px solid #9b9b9b; height: 3.8rem; }
+    table th { background-color: rgb(248, 250, 252); }
+    .fa-check-square { font-size: 1.8rem; color: #14c1c7; }
+    .detail-link { color: black; }
+    .detail-link:hover { color: #14c1c7; font-weight: bolder; font-size: 1.45rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     input[type="checkbox"]{ display: none; }
-    input[type="checkbox"] + label {
-        display: inline-block; 
-        height: 2rem; 
-        padding-left: 3.2rem; 
-        background: url(/img/admin/checkbox.png) no-repeat 0 0; 
-        background-size: 2.1rem;
-        cursor: pointer; 
-        vertical-align: middle; 
-    }
-    input[type="checkbox"]:checked + label {
-        background: url(/img/admin/check.png) no-repeat 0 0;
-        background-size: 1.7rem;
-    }
+    input[type="checkbox"] + label { display: inline-block; height: 2rem; padding-left: 3.2rem; background: url(/img/admin/checkbox.png) no-repeat 0 0; background-size: 2.1rem; cursor: pointer; vertical-align: middle; }
+    input[type="checkbox"]:checked + label { background: url(/img/admin/check.png) no-repeat 0 0; background-size: 1.7rem; }
     table tr td label { margin-left: 10px; }
     table tr th label { margin-left: 10px; }
     .nonData { height: 10rem; color: #999; font-size: 1.4rem;  }
@@ -190,6 +115,8 @@ const QuestionPage = () => {
             let current = document.getElementById(pageNum);
                 current.style.color = "#14c1c7";
         }
+        let delCheck = document.querySelectorAll('.delCheck');
+        delCheck.forEach((check)=>{ check.checked = false; })
         if(question.data.result.length !== 0){ setAxios(1) } // axios의 값 존재 여부 저장
     }, [change]);
 
@@ -225,7 +152,7 @@ const QuestionPage = () => {
                                     <th width="7%"><input type="checkbox" id="question_check" name="selectall" onClick={checkAll}/><label for="question_check"></label></th>
                                     <th width="15%">작성자</th>
                                     <th width="14%">문의유형</th>
-                                    <th width="45%">문의내용</th>
+                                    <th width="45%">문의제목</th>
                                     <th width="19%">작성일</th>
                                 </tr>
                                 {  listAxios !== 0 ?

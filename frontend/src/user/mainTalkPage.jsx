@@ -19,10 +19,10 @@ const MainTalkPage = () =>{
 
     return (
         <>
-        <Header idx={param} param={param}/>
+        <Header/>
         <MainForm>
             <div className="container">
-                <MainProfile idx={param} param={param}/>
+                <MainProfile idx={param}/>
                 <TalkList idx={param}/>
             </div>
         </MainForm>

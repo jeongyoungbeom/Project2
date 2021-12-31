@@ -23,7 +23,6 @@ router.route('/main').get((req, res) => {
         });
     } else {
         res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
-        console.log('pool이 없대욥');
         res.write('<p>mongodb 데이터베이스에 연결하지 못했습니다 </p>')
         res.end();
     }
@@ -45,7 +44,6 @@ router.route('/main/post').get((req, res) => {
         });
     } else {
         res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
-        console.log('pool이 없대욥');
         res.end();
     }
 })
@@ -66,7 +64,6 @@ router.route('/main/chat').get((req, res) => {
         });
     } else {
         res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
-        console.log('pool이 없대욥');
         res.end();
     }
 });
@@ -95,7 +92,6 @@ router.route('/main/place').get((req, res) => {
 // 친구 목록
 router.route('/main/friend/list').get((req, res) => {
     const idx = req.query.idx;
-
     if (pool) {
         friendList(idx, (err, result) => {
             if (err) {
@@ -109,16 +105,14 @@ router.route('/main/friend/list').get((req, res) => {
         });
     } else {
         res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
-        console.log('pool이 없대욥');
         res.end();
     }
 })
 
 // 친구 검색
 router.route('/main/friend').post((req, res) => {
-    const invitationCode = req.query.code;
-    const idx = req.query.idx;
-
+    const invitationCode = req.body.code;
+    const idx = req.body.idx;
     if (pool) {
         invitation(invitationCode, idx, (err, result) => {
             if (err) {
@@ -132,16 +126,14 @@ router.route('/main/friend').post((req, res) => {
         });
     } else {
         res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
-        console.log('pool이 없대욥');
         res.end();
     }
 });
 
 // 친구 추가
 router.route('/main/insert_friend').post((req, res) => {
-    const fIdx = req.query.fIdx;
-    const idx = req.query.idx;
-
+    const fIdx = req.body.fIdx;
+    const idx = req.body.idx;
     if (pool) {
         insertFriend(fIdx, idx, (err, result) => {
             if (err) {
@@ -155,7 +147,6 @@ router.route('/main/insert_friend').post((req, res) => {
         })
     }
 })
-
 
 // 채팅방 만들기
 router.route('/main/insert_chat_room').get((req,res)=>{
@@ -220,7 +211,6 @@ const insertRoom = function(senderIdx, receiverIdx, callback) {
         }
     })
 }
-
 
 // 메인페이지
 const main = function (idx, callback) {
@@ -360,9 +350,10 @@ const insertFriend = function (fIdx, idx, callback) {
             conn.query('select exists (select idx from friend where memberIdx = ? and friendIdx = ? limit 1) as success;', [idx, fIdx], (err, result) => {
                 if(result[0].success == 1) {
                     conn.query('delete from friend where memberIdx = ? and friendIdx = ?', [idx, fIdx]);
+                    conn.query('delete from friend where memberIdx = ? and friendIdx = ?', [fIdx, idx]);
                 }else {
                     conn.query('insert into friend(memberIdx, friendIdx) values(?, ?)', [idx, fIdx]);
-                    conn.query('insert into friend(memberIdx, friendIdx) values(?, ?)', [fIdx, idx])
+                    conn.query('insert into friend(memberIdx, friendIdx) values(?, ?)', [fIdx, idx]);
                 }
 
                 conn.release();

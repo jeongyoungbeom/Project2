@@ -1,89 +1,37 @@
-import React, { useState , useEffect ,Component } from "react";
-import { Link,BrowserRouter as Router } from "react-router-dom";
+import React, { useState } from "react";
 import styled from 'styled-components';
-import axios from 'axios';
+import axios from "axios";
 
 const FindidpwStyled = styled.div`
-    html{
-        text-decoration:none;
-        background-color: rgb(248, 250, 252);
-    }
-    .forheigth{ height:80px }
-    .red{
-        color:red;
-        font-size:1.2rem;
-        margin: 0;
-    }
-    *{ text-decoration:none; box-sizing: border-box; }
+    * { text-decoration:none; box-sizing: border-box; }
     input, textarea, button { padding: 0; outline: 0; border: 0; resize: none; border-radius: 0; -webkit-appearance: none; background-color: rgba(0,0,0,0); }
-    .body{
-        width: 55rem;
-        padding: 2rem;
-        position:absolute; top:50%; left:50%; transform: translate(-50%, -50%);
-    }
-    .findtopnav {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-    }
+    .forheigth { margin-bottom: 0; height: 8.3rem; }
+    .body{ width: 42rem; padding: 2rem; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    .red { color: red;  font-size: 1.2rem; margin: 0; }
+    .findtopnav { display: flex; justify-content: center; align-items: center; flex-direction: column; }
     .findComment{ margin: 3rem 0; }
-    .findComment p{
-        text-align: left;
-        font-size: 2rem;
-        color: #222;
-        margin: 0;
-        word-break : keep-all;
-    }
-    .findtopnav h2{
-        color: #222;
-        font-size: 3.5rem;
-    }
-    .phinput input{
-        border: none;
-        background-color: #fff;
-        width: 100%;
-        height: 6rem;
-        color: black;
-        margin-bottom: 1rem;
-        font-size: 2rem;
-        border: 1px solid lightgray;
-        border-radius: 12px;
-        padding-left: 1rem;
-        font-size:1.5rem;
-    }
-    .finregi { margin-top: 1rem;}
-    .finregi button{
-        display: flex;
-        padding: 1.5rem 0;
-        font-size: 1.9rem;
-        font-weight: bolder;
-        color: white;
-        width: 100%;
-        border-radius: 15px;
-        border: 0;
-        background: #4fd1c5;
-        justify-content: center;
-        margin-top: 0.5rem;
-        cursor: pointer;
-    }
+    .findComment p{ text-align: left; line-height: 3rem; font-size: 1.6rem; font-weight: bold; color: #888; margin: 0 0 0 1rem; word-break : keep-all; }
+    input:hover { border: 1px solid #14c1c7; }
+    .findtopnav h2{ color: #222; font-size: 2.6rem;  margin-bottom: 0; }
+    .phinput input{ border: none; background-color: #fff; width: 100%; height: 4.5rem; color: black; margin-bottom: 1rem; font-size: 1.4rem; border: 1px solid lightgray; border-radius: 12px; padding-left: 1rem; font-size: 1.5rem; }
+    .finregi { margin-top: 1rem; }
+    .finregi button { display: flex; padding: 1.2rem 0; font-size: 1.6rem; font-weight: bolder; color: white; width: 100%; border-radius: 10px; border: none; background: #14c1c7; justify-content: center; cursor: pointer; }
     .finregi button:disabled{ background: #dfdfdf; }
-    .ph{ font-size:1.5rem; }
-    `;
+    .ph { font-size: 1.5rem; }
+    .ph p { margin-bottom: 0.8rem; }
+`;
 
 let hpDisable = false;
-const Findidpw = () => {    
+const Findidpw = () => {
     const formRef = React.createRef();
     //휴대폰번호 저장
-    const [display4 ,setDisplay4] = useState("none")
-    const [handp ,setHandp] = React.useState('');
+    const [display4, setDisplay4] = useState("none")
+    const [handp, setHandp] = React.useState('');
 
-    //핸드폰버노 유효성 검사
-    const changeDispaly4 = (display4) => {
-        setDisplay4(display4)
-    }
+    //핸드폰번호 유효성 검사
+    const changeDispaly4 = (display4) => { setDisplay4(display4) }
 
-     //핸드폰버노 유효성 검사
+     //핸드폰번호 유효성 검사
     const checkPh = (e) => {
         e.preventDefault();
         const regExp = /^01([0|1|6|7|8|9])-?([0-9]{4})-?([0-9]{4})$/;
@@ -108,14 +56,13 @@ const Findidpw = () => {
         }
     }
     //axios
-    //http://localhost:3001/member/login
-    const searchEmail = (e) => {
+    const searchEmail = async (e) => {
         e.preventDefault();
-
-        axios.post('/member/findId',null,{
-            //params을 config로 보내주려고 중간데이터 null넣어쥼!
-            params: {
-            'tel': handp
+        await axios({
+            method: "post",
+            url:`http://localhost:3001/member/findId`,
+            data: {
+                tel: handp
             }
         })
         .then(res => {
@@ -125,7 +72,6 @@ const Findidpw = () => {
                 window.location.href="/SuckFindId/"+ res.data
             }
         })
-        .catch()
     }
     return (
         <FindidpwStyled>
@@ -142,12 +88,12 @@ const Findidpw = () => {
                     <div className="ph">
                         <p>휴대폰 번호</p>
                         <div className="phinput forheigth">
-                        <input type="text"   id="phInput" value={handp} onChange={checkPh} placeholder="휴대폰번호를 입력해주세요."/>
+                        <input autocomplete="off" value={handp} id="ph" onChange={checkPh} placeholder="휴대폰번호를 입력해주세요."/>
                         <p className="red"  style={{display:display4}}>* 전화번호를 다시 입력해 주세요. ('-'제외)</p>  
                         </div>
                     </div>
                     <div className="finregi">
-                        <button className="activebtn" type="button" disabled={disabled} onClick={searchEmail}>이메일 찾기</button>
+                    <button className="activebtn" type="button" disabled={disabled} onClick={searchEmail}>이메일 찾기</button>
                     </div>    
                 </form>
             </div>

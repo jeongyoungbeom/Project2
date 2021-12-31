@@ -23,7 +23,6 @@ const Form = styled.div` background-color: rgb(248, 250, 252); height: 100%; pos
 
 function Login(){
     const formRef = React.createRef();
-    const inputRef = React.createRef();
 
     //이메일, 비밀번호 확인
     const [email, setEmail] = React.useState('')
@@ -92,8 +91,8 @@ function Login(){
             window.location.href="/admin/main"
         }else{
             alert('이메일/비밀번호를 확인하세요')
-            window.location.href="/admin"
-        }
+            window.location.reload()
+        } 
     }
     return (
         <Form>

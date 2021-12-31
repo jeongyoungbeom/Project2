@@ -60,7 +60,6 @@ const MemberPage = () => {
 
     const PaginationArr = (e) =>{
         let pageArr = e.target.value
-        console.log(pageArr)
         Pagination(pageArr)
     }
 

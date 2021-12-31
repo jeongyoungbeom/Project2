@@ -45,7 +45,7 @@ const SideBar = () => {
                 <Link to="/admin/question" className="side-link" id="question"><i class="fab fa-quora"></i>문의사항</Link>
             </div>
             <div className="link-form link-main">
-                <Link to="/login"><img src="/img/admin/us_main.png" /><p className="sub-link">Go WebSite <i class="fas fa-angle-right"></i></p></Link>
+                <Link to="/"><img src="/img/admin/us_main.png" /><p className="sub-link">Go WebSite <i class="fas fa-angle-right"></i></p></Link>
             </div>
             <div className="small-form">
                 <p className="small-text">Made In Korea</p>

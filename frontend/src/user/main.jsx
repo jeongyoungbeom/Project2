@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Header from "../UserComponents/header";
 import MainProfile from "../UserComponents/mainProfile";
 import styled from "styled-components";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
 
 
@@ -22,37 +22,33 @@ const MainForm = styled.div`
 
 
 const MainPage = () =>{
-    const param = window.location.search.split('=')[1]  // 로그인한 memberIdx
-    const {idx} = useParams();  // 프로필페이지의 memberIdx
-
+    const param = window.location.search.split('=')[1]
     const [post, setPost] = useState([]);
-
+    
     useEffect(async () => {
-        const cookie = document.cookie; // 받아온 id값 저장
-
-        const post = await axios.get(`http://localhost:3001/main/post?idx=${idx}`)
+        const post = await axios.get("http://localhost:3001/main/post?idx=" + param)
         console.log(post)
         setPost(post.data)
     }, []);
 
     return (
         <>
-        <Header idx={idx} param={param}/>
+        <Header idx={param}/>
         <MainForm>
             <div className="container">
-                <MainProfile idx={idx} param={param}/>
+                <MainProfile idx={param}/>
                 <div className="section4_box">
                     <div className="social_layer">
                         <div className="social_box">
-                            {post.length!==0 ? 
+                            {post.length!==0?
                                 post.map((postData, index)=>(
                                     <div className={(index+1)%3===0?'last_box':'box'}>
-                                        <Link to={`/detail/${postData.postIdx}?idx=${param}`}>
+                                        <Link to={"/uploadPage/"+postData.postIdx}>
                                             <div className="social1">
                                                 <img className="social1_img" src={'/uploads/'+postData.imgName}/>
                                             </div>
-                                            {postData.cnt>1 ?
-                                            <div className="slide_box"><i className="far fa-copy"></i></div> : <></>
+                                            {postData.cnt>1?
+                                            <div className="slide_box"><i class="far fa-copy"></i></div>:<></>
                                             }
                                         </Link>
                                     </div>

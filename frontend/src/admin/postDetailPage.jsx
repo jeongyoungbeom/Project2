@@ -25,23 +25,23 @@ const PostForm = styled.div`
     .postTextBox{ height: calc(49.7% - 2px); border:1px solid #979797; overflow-y: scroll; }
     .firstBox{ margin-bottom: 0.9% }
     .postDetail_text, .postDetail_re{ padding: 1rem; overflow-wrap: anywhere; font-size: 1.4rem; }
-    .postDetail_re p { margin:0.5rem 0; }
+    .postDetail_re p { margin:0; }
     .postDetail_re p span{ margin-left: 1.5rem; font-size: 1rem; font-weight: bolder; }
     input[type="button"] { background-color: #14c1c7; border: 1px solid white; color: white; width: 9rem; height: 3.5rem; border-radius: 5px; box-shadow: 2px 2px 2px 2px rgb(210,210,210);  margin-left: 2rem; font-size: 1.3rem; cursor: pointer; }
     .button-box { text-align: center; margin-top: 3rem; }
-    .reply { padding-bottom: 1rem; padding-left: 1rem;  }
     .nonReply { font-weight: bold; color: #777; }
+    .replyImg{ width: 4rem; border-radius: 50%; border: 1px solid lightgray; }
 `;
 const Form = styled.div` background-color: rgb(248, 250, 252); height: 100%; position: fixed; width: 100%; overflow-y: auto;`;
-let img = 0;
 
+let img = 0;
 const PostDetailPage = () => {
+
     const id = useParams();  // 넘겨받은 id값
 
     const [detail, setDetail] = useState({postInfo:[0], postImg:[0], postReply:[0]});
     let [detailImg, setDetailImg] = useState(0) // scrollImg-useEffect 재실행을 위한 값 변경 저장
     let [scrollImg, setScrollImg ] = useState(''); // imgName 저장
-    
 
     useEffect(async () => {
         const postDetail = await axios.get("http://localhost:3001/admin/post/detail?postIdx=" + id.idx)
@@ -62,7 +62,7 @@ const PostDetailPage = () => {
         img = img === 0 ? 0 : img-1;
         setScrollImg(detail.postImg[img].imgName)
     }
-
+    console.log(detail)
     return (
         <Form>
             <Header/>
@@ -101,7 +101,14 @@ const PostDetailPage = () => {
                                     {
                                         detail.postReply.length !== 0 ?
                                             detail.postReply.map(rowData => (
-                                                <p className="reply">{rowData.content} <span>{rowData.createdAt}</span></p>
+                                                <div style={{display: 'flex', alignItems:'flex-start', margin: '1rem 0'}}>
+                                                    <img className="replyImg" src={'/'+rowData.img}/>
+                                                    <div style={{paddingLeft: '1rem'}}>
+                                                        <p style={{fontSize: '1.2rem'}}>{rowData.email}<span>{rowData.createdAt}</span></p>
+                                                        <p className="reply" style={{width: '36rem'}}>{rowData.content}</p>
+                                                    </div>
+                                                    
+                                                </div>
                                         )):
                                             <p className="reply nonReply">등록된 댓글이 없습니다</p>
                                     }

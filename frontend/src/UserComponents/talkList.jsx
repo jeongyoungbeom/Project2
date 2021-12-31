@@ -37,21 +37,17 @@ function timeForToday(value) {
     const betweenTime = Math.floor((today.getTime() - timeValue.getTime()) / 1000 / 60);
 
     if (betweenTime < 1) return '방금전';
-    if (betweenTime < 60) {
-        return `${betweenTime}분전`;
-    }
-
+    if (betweenTime < 60) {  return `${betweenTime}분전`; }
     const betweenTimeHour = Math.floor(betweenTime / 60);
     if (betweenTimeHour < 24) {
         if(hour>13) halfHour = '오후';
         return halfHour +' '+ timeValue.toTimeString().substring(0,5);
     }
-
     return `${year}-${month >= 10 ? month : '0' + month}-${date >= 10 ? date : '0' + date}`;
 }
 
 const TalkList = (idx)=>{
-    const cookie = document.cookie;
+    
     const [posts, setPosts] = React.useState({});
     const [current, setCurrent] = React.useState({});
     
@@ -59,28 +55,23 @@ const TalkList = (idx)=>{
     const[addOn, setAddOn] = React.useState(false);
 
     useEffect(() => {
-        console.log('리스트에서 idx뽑기',idx);
-        console.log('리스트에서 idx뽑기',idx.idx);
         try{
             Promise.allSettled([
-                axios.get(`http://localhost:3000/main/chat?idx=${idx.idx}`, {
+                axios.get(`http://localhost:3001/main/chat?idx=${idx.idx}`, {
                     validateStatus: function (status) {
                       return status < 500; // Resolve only if the status code is less than 500
                     }
                 })
             ]).then((res) => {
-                console.log(res);
-                console.log(res[0].value.data);
                 setPosts(res[0].value.data);
             })
         } catch(e){
             console.error(e.message)
         }
-    },[posts])
+    },[])
     
     const onView = (roomIdx) => {
         setCurrent(posts.find(item => item.idx === roomIdx))
-        console.log(current);
     }
 
     const onTalkPop = () => {
@@ -89,7 +80,7 @@ const TalkList = (idx)=>{
         if(addOn==false){
             document.body.style.overflow = "hidden";
         }else if(addOn==true){
-            // document.body.style.overflow = "unset";
+            document.body.style.overflow = "unset";
         }
     }
 
@@ -107,14 +98,13 @@ const TalkList = (idx)=>{
                         }}>
                             <div className='talkItem' onContextMenu={(e) => {
                                 e.preventDefault();
-                                alert('우클!');
                             }}>
                                 <div className='talkProfileImgWrap'>
                                     <img className='talkProfileImg' src={post.img==null||post.img==''? "/img/blank_profile.png": "/"+post.img} alt='프로필 사진'></img>
                                 </div>
                                 <div className='talkDetailWrap'>
                                     <div className='talkProfileName'>{post.name}</div>
-                                    <div className='talkDetail'>{post.title}</div>
+                                    <div className='talkDetail'>{post.chat}</div>
                                 </div>
                                 <div className='talkRecord'>
                                     <div className='talkDate'>{timeForToday(post.time)}</div>

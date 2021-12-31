@@ -35,11 +35,10 @@ const QuestionDetailPage = () => {
 
     useEffect(async () => {
         const questionDetail = await axios.get("http://localhost:3001/admin/inquiry/detail?idx=" + idx.idx)
-        setDetail({qnaInfo:questionDetail.data[0][0], qnaDec:questionDetail.data[1]})
+        setDetail({qnaInfo:questionDetail.data[0][0], qnaDec:questionDetail.data[1][0]})
         setMessage(questionDetail.data[0][0].message)
-        console.log(questionDetail)
     }, []);
-
+    
     const content = (e) =>{
         let msg = e.target.value
         setMessage(msg)
@@ -50,7 +49,6 @@ const QuestionDetailPage = () => {
         if(message===''){alert('답변을 지웠습니다')}else{alert('답변이 등록되었습니다')}
     }
 
-    console.log(detail.qnaInfo.message)
     return (
         <Form>
             <Header/>
@@ -71,7 +69,7 @@ const QuestionDetailPage = () => {
                                     <th>문의유형</th>
                                     <td>{detail.qnaInfo.type}</td>
                                     <th>신고대상자</th>
-                                    {detail.qnaInfo.type === "신고문의" ?
+                                    {detail.qnaInfo.type === "신고하기" ?
                                         <td>{detail.qnaDec.name} [<span> {detail.qnaDec.email} </span>]</td> : <td>-</td> }
                                 </tr>
                                 <tr>

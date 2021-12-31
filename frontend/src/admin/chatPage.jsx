@@ -36,7 +36,6 @@ const ChatPage = () => {
     let [chat, setChat] = useState([]);
     let [pageNum, setPageNum] = useState(1);
     let [change, setChange] = useState(1); // useEffect 재실행을 위해 change값을 저장
-    let [search, setSearch] = useState('');
     let [dateStart, setDateStart] = useState('');
     let [dateEnd, setDateEnd] = useState('')
 
@@ -68,12 +67,6 @@ const ChatPage = () => {
         const dateEnd = e.target.value;
         setDateEnd(dateEnd)
     }
-
-    const searchSelect = (e)=>{
-        e.preventDefault()
-        const searchSelect = e.target.value;
-        setSearch(searchSelect)
-    }
     
     const Search = () =>{
         setPageNum(1)
@@ -81,20 +74,17 @@ const ChatPage = () => {
     }
 
     const Reset = () =>{
-        setSearch('')
         setDateStart('')
         setDateEnd('')
         let e1 = document.getElementById('startDate');
         let e2 = document.getElementById('endDate');
-        let e3 = document.getElementById('report');
         e1.value = '';
         e2.value = '';
-        e3.value = '';
         Search()
     }
 
     useEffect(async () => {
-        const chat = await axios.get("http://localhost:3001/admin/chat?page=" + pageNum + "&report=" + search + "&date1=" + dateStart + "&date2=" + dateEnd)
+        const chat = await axios.get("http://localhost:3001/admin/chat?page=" + pageNum + "&date1=" + dateStart + "&date2=" + dateEnd)
         setChat(chat.data)
         let paginationClass = document.querySelectorAll('.paginationClass');
         if(chat.data.totalPage!==0){
@@ -117,12 +107,6 @@ const ChatPage = () => {
                 <div className="chatListBox">
                 <p className="title">채팅관리</p>
                     <div className="chatSearchBox">
-                        <p className="search-text">구분</p>
-                        <select id="report" onChange={searchSelect}>
-                            <option value="">전체</option>
-                            <option value="Y">신고여부 : Y</option>
-                            <option value="N">신고여부 : N</option>
-                        </select>
                         <p className="search-text">날짜</p>
                         <input type="date" className="chatDate" id="startDate" onChange={Start}/>
                         <p>~</p>
@@ -133,23 +117,17 @@ const ChatPage = () => {
                     <div>
                         <table>
                             <tr>
-                                <th width="10%" className="Number">번호</th>
-                                <th width="10%" className="chatNumber">인원수</th>
-                                <th width="27%" className="chatRoomName">채팅방명</th>
+                                <th width="15%" className="Number">번호</th>
+                                <th width="65%" className="chatRoomName">채팅방명</th>
                                 <th width="20%" className="chatDateText">채팅 생성일자</th>
-                                <th width="18%" className="chatType">채팅방 유형</th>
-                                <th width="15%" className="chatDec">채팅방 신고여부</th>
                             </tr>
                             { listAxios !== 0 ?
                                 chat.result.length !== 0 ?
                                     chat.result.map(rowData => (
                                         <tr>
                                             <td className="Number">{rowData.idx}</td>
-                                            <td className="chatNumber">{rowData.cnt}</td>
                                             <td className="chatRoomName"><Link to={"/admin/chat/detail/"+rowData.idx} className="link">{rowData.title}</Link></td>
                                             <td className="chatDateText">{rowData.createdAt}</td>
-                                            <td className="chatType">{rowData.type}</td>
-                                            <td className="chatDec">{rowData.report}</td>
                                         </tr>
                                     )) : // rowData 가 없으면 나타냄
                                     <tr className="nonData"><td colSpan="6">검색결과가 존재하지 않습니다</td></tr>

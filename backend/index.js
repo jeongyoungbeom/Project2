@@ -42,14 +42,13 @@ io.sockets.on('connection', (socket) =>{
     // 방 조인
     socket.on('joinRoom', (idx) => {     // joinRoom을 클라이언트가 emit 했을 시    // ({idx, room})
         console.log(idx, '조인');
-        socket.join(idx);    // 클라이언트를 msg에 적힌 idx으로 참여 시킴
+        socket.join(idx);    // 클라이언트를 msg에 적힌 room으로 참여 시킴
     });
 
     socket.on('message', function(msg) {       // 클라이언트가 채팅 내용을 보냈을 시
         // 전달한 roomName에 존재하는 소켓 전부에게 broadcast라는 이벤트 emit
         console.log(msg);
-        io.to(msg.idx).emit('send', msg); 
-        console.log('지나가라');
+        io.to(msg.idx).emit('send', msg);
         pool.getConnection((err, conn)=>{
             if(err){
                 console.log(err);

@@ -5,18 +5,15 @@ import styled from "styled-components";
 import axios from "axios";
 import { Link } from "react-router-dom";
 
+const Form = styled.div` background-color: rgb(248, 250, 252); height: 100%; position: fixed; width: 100%; overflow-y: auto;`;
+
 const MainForm = styled.div`
     overflow-x: hidden;
     margin-left: 24rem;
     .mw { position:fixed; top:0; left:0; width:100%; height:100%; z-index: 1000; }
     .mw .bg { position:fixed; top:0; left:0; width:100%; height:100%; background:#000; opacity:.5; filter:alpha(opacity=50); }
     .mw .fg { position:absolute; top:50%; left:50%; width: 50rem; height: 60rem;  transform: translate(-50%, -50%); background:#fff; border-radius: 30px; }
-    .openBtn {
-        background-color: #F9B514;
-        padding: 5px 10px;
-        border-radius: 4px;
-        cursor: pointer;
-    }
+    .openBtn { background-color: #F9B514; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
     .title { border-radius: 10px; font-size: 1.5rem; font-weight: bold; color: #14c1c7; }
     .mainDashBox{ background-color: white; margin: 13rem auto 10rem; width: 112rem; border-radius: 20px; padding: 1.5rem 4rem; box-shadow: 5px 5px 5px 5px rgb(210, 210, 210); }
     .dashFlexBox{ display: flex; justify-content: center; margin-top: 5rem; }
@@ -26,22 +23,22 @@ const MainForm = styled.div`
     .dashBText{ font-size: 2.2rem; font-weight: bold; }
     .dashSText{ font-size: 1.2rem; }
     .dashListBox{ width:32rem; font-size: 1.5rem; border: 1px solid lightgray; border-radius: 5px; margin: 0 1rem; padding: 1.5rem 1rem; text-align: center; }
-    .fa-user, .fa-clipboard-list, .fa-bell{ font-size: 2rem; color: gray; }
+    .fa-user, .fa-clipboard-list, .fa-comments{ font-size: 2rem; color: gray; }
     .sListBox{ text-align: left; }
     .sListBox p{ margin: 1.5rem auto; width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sListBox p:hover{ font-weight: bold; color: #14c1c7; }
     .ListTitle{ margin: 0.8rem 0 2rem 0; font-weight: bold; }
     .dashChatFlexBox{ width: 95.1%; display: flex; border: 1px solid lightgray; border-radius: 5px; margin: 2rem auto; }
     .dashChatTextBox{ width: 20rem; border-right: 1px solid lightgray; text-align: center; }
-    .fa-comments{ font-size: 3rem; margin-top: 6rem; color: gray; }
+    .fa-bell{ font-size: 3rem; margin-top: 6rem; color: gray; }
     .dashChatTextBox { height: 19rem;}
-    .dashChatTextBox p{ font-size: 1.5rem; font-weight: bold; }
-    .dashChatListBox p{ font-size: 1.5rem; padding: 0 0 0 2rem; }
+    .dashChatListBox p { font-size: 1.5rem; padding: 0 0 0 2rem; overflow: hidden; text-overflow: ellipsis;  white-space: nowrap; width: 65rem;}
     .dashChatListBox p span{ font-weight: bold; }
     .dashChatListBox p:hover{ font-weight: bold; color: #14c1c7; }
     a { color: black; text-decoration-line: none; }
+    .chatTitle { font-size: 1.5rem; font-weight: bold;  }
+    .dashChatTextBox p { font-size: 1.5rem; font-weight: bold; }
 `;
-const Form = styled.div` background-color: rgb(248, 250, 252); height: 100%; position: fixed; width: 100%; overflow-y: auto;`;
 
 const MainPage = () => {
 
@@ -156,14 +153,14 @@ const MainPage = () => {
                             } 
                         </div>
                         <div className="dashListBox">
-                            <i class="fas fa-bell"></i>
-                            <p className="ListTitle">최신 문의 사항</p>
-                            { question.length !== 0 ?
-                                question.map(rowData => (
-                                    <div className="sListBox">
-                                        <Link to={"/admin/question/detail/" + rowData.idx}><p>{rowData.inquiryContent}</p></Link>
-                                    </div>
-                                )):
+                            <i class="fas fa-comments"></i>
+                            <p className="ListTitle">최신 채팅방</p>
+                            { chat.length !== 0 ?
+                            chat.map(rowData => (
+                                <div className="sListBox">
+                                    <Link to={"/admin/chat/detail/" + rowData.idx}><p><span className="chatTitle">{rowData.title}</span> - 생성날짜 : {rowData.createdAt} </p></Link>
+                                </div>
+                            )):
                                     <div className="sListBox">
                                         <p>게시글이 없습니다</p>
                                     </div>
@@ -172,14 +169,14 @@ const MainPage = () => {
                     </div>
                     <div className="dashChatFlexBox">
                         <div className="dashChatTextBox">
-                            <i class="fas fa-comments"></i>
-                            <p>최신 채팅방</p>
+                            <i class="fas fa-bell"></i>
+                            <p>최신 문의사항</p>
                         </div>
                         <div className="dashChatListBox">
-                        { chat.length !== 0 ?
-                            chat.map(rowData => (
-                                <Link to={"/admin/chat/detail/" + rowData.idx}><p><span>{rowData.title}</span> - {rowData.type}채팅 / 인원 : {rowData.ChatCnt}명(정영범 외 {rowData.ChatCnt - 1}명) / 생성날짜 : {rowData.createdAt} </p></Link>
-                            )):
+                            { question.length !== 0 ?
+                                question.map(rowData => (
+                                    <Link to={"/admin/question/detail/" + rowData.idx}><p>{rowData.inquiryContent}</p></Link>
+                                )):
                                 <p>게시글이 없습니다</p>
                         } 
                         </div>

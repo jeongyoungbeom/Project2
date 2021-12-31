@@ -21,12 +21,12 @@ const PostForm = styled.div`
     select{ width:12rem; margin-right:1rem; border: 1px solid #14c1c7; border-radius: 5px; box-shadow: 2px 2px 2px 2px rgb(210,210,210); }
     select:focus, .postDate:focus{outline:none;}
     .postDate{ border: 1px solid #14c1c7; border-radius: 5px; box-shadow: 2px 2px 2px 2px rgb(210,210,210); }
-    .postContent{ width:45%; }
+    .postContent{ width:60%; }
     .postContent a{ text-decoration: none; color: black; }
     .postContent a:hover{ font-size: 1.45rem; color: #14c1c7; font-weight: bolder; }
     .postRegist{ width:20%; }
     .postDateText{ width:20%; }
-    .postDec{ width:15%; }
+    .contentOverflow{ width:56rem; height: 2rem; overflow: hidden; padding: 0 9rem; text-overflow: ellipsis; margin: 0 auto; }
     table { text-align: center; width: 100%; margin-top: 10px; border-collapse: collapse; border: 2px solid #9b9b9b; font-size:1.4rem }
     table th, table td { border: 1px solid #9b9b9b; height: 3.8rem; }
     table th { background-color: rgb(248, 250, 252); }
@@ -39,14 +39,13 @@ const PostPage = () => {
     let [post, setPost] = useState([]);
     let [pageNum, setPageNum] = useState(1);
     let [change, setChange] = useState(1);
-    let [search, setSearch] = useState('');
     let [dateStart, setDateStart] = useState('');
     let [dateEnd, setDateEnd] = useState('')
 
     let pages = [];
 
     const Pagination = (page) =>{ 
-        setPageNum(page)
+        setPageNum(page);
         if(change == 1){ setChange(0) }else{ setChange(1) } } // useEffect 재실행을 위해 change값을 변경
 
     const PaginationNum = (e) =>{
@@ -70,12 +69,6 @@ const PostPage = () => {
         const dateEnd = e.target.value;
         setDateEnd(dateEnd)
     }
-
-    const searchSelect = (e)=>{
-        e.preventDefault()
-        const searchSelect = e.target.value;
-        setSearch(searchSelect)
-    }
     
     const Search = () =>{
         setPageNum(1)
@@ -83,20 +76,17 @@ const PostPage = () => {
     }
 
     const Reset = () =>{
-        setSearch('')
         setDateStart('')
         setDateEnd('')
         let e1 = document.getElementById('startDate');
         let e2 = document.getElementById('endDate');
-        let e3 = document.getElementById('report');
         e1.value = '';
         e2.value = '';
-        e3.value = '전체';
         Search()
     }
 
     useEffect(async () => {
-        const post = await axios.get("http://localhost:3001/admin/post?page=" + pageNum + "&report=" + search + "&date1=" + dateStart + "&date2=" + dateEnd)
+        const post = await axios.get("http://localhost:3001/admin/post?page=" + pageNum + "&date1=" + dateStart + "&date2=" + dateEnd)
         setPost(post.data)
         let paginationClass = document.querySelectorAll('.paginationClass');
         if(post.data.totalPage!==0){
@@ -110,7 +100,7 @@ const PostPage = () => {
     }, [change]);
 
     for(let i = post.startPage; i <= post.endPage; i++) { pages[i] = i }
-
+    console.log(post)
     return (
         <Form>
             <Header/>
@@ -119,12 +109,6 @@ const PostPage = () => {
                 <div className="postListBox">
                 <p className="title">게시물관리</p>
                     <div className="postSearchBox">
-                        <p>구분</p>
-                        <select id="report" onChange={searchSelect}>
-                            <option>전체</option>
-                            <option value="Y">신고여부 : Y</option>
-                            <option value="N">신고여부 : N</option>
-                        </select>
                         <p>날짜</p>
                         <input type="date" className="postDate" id="startDate" onChange={Start}/>
                         <p>~</p>
@@ -138,16 +122,14 @@ const PostPage = () => {
                                 <th className="postRegist">작성자</th>
                                 <th className="postContent">게시물 내용</th>
                                 <th className="postDateText">게시물 생성 날짜</th>
-                                <th className="postDec">게시물 신고 여부</th>
                             </tr>
                             { listAxios !== 0 ?
                                 post.result.length !== 0 ?
                                     post.result.map(rowData => (
                                         <tr>
                                             <td className="postRegist">{rowData.name}</td>
-                                            <td className="postContent"><Link to={"/admin/post/detail/"+rowData.idx}>{rowData.content}</Link></td>
+                                            <td className="postContent"><div className="contentOverflow"><Link to={"/admin/post/detail/"+rowData.idx}>{rowData.content}</Link></div></td>
                                             <td className="postDateText">{rowData.createdAt}</td>
-                                            <td className="postDec">{rowData.report}</td>
                                         </tr>
                                     )) : // rowData 가 없으면 나타냄
                                     <tr className="nonData"><td colSpan="4">검색결과가 존재하지 않습니다</td></tr>

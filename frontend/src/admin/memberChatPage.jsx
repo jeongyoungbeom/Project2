@@ -216,7 +216,7 @@ const MemberChatPage = () => {
                                 list.result.map(rowData => (
                                     <tr>
                                         <td className="memberChatNum">{rowData.idx}</td>
-                                        <td className="memberChatTitle chatTitle"><div  id={rowData.idx} onClick={onOpenChat} className="contentOverflow">[{rowData.type}] {rowData.title}</div></td>
+                                        <td className="memberChatTitle chatTitle"><div  id={rowData.idx} onClick={onOpenChat} className="contentOverflow">{rowData.title}</div></td>
                                         <td className="memberChatDate">{rowData.createdAt}</td>
                                     </tr>
                                 )) :

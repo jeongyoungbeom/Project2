@@ -50,6 +50,7 @@ const MemberPostForm = styled.div`
     .postImgBtn{ width: 100%; display:flex; justify-content: space-between; position: relative; bottom: 17rem; } 
     .postImgBtn img{ width: 6rem; }
     .nonData { height: 10rem; color: #999; font-size: 1.4rem; }
+    .nonRe{ font-size: 1.3rem; padding: 1.2rem; margin: 0; }
 `;
 const Form = styled.div` background-color: rgb(248, 250, 252); height: 100%; position: fixed; width: 100%; overflow-y: auto;`;
 let img = 0;
@@ -202,7 +203,7 @@ const MemberPostPage = () => {
                                     </div>
                                     : <></>
                                 )):
-                                <p>등록된 댓글이 없습니다.</p>
+                                <p className="nonRe">등록된 댓글이 없습니다.</p>
                             }
                         </div>
                     </div>

@@ -49,21 +49,9 @@ const ChatDetailPage = () => {
     let [infomation, setInfo] = useState([]);
     let [profile, setProfile] = useState([]);
     let [chat, setChat] = useState([]);
-    let [search, setSearch] = useState('');
-    let [change, setChange] = useState(1);
     let [popup, setPopup] = useState();
     let [popupId, setId] = useState(null); // 팝업으로 띄울 room idx 값 저장 
     const id = useParams();
-
-    const searchInput = (e)=>{
-        e.preventDefault()
-        const searchInput = e.target.value;
-        setSearch(searchInput)
-    }
-    
-    const Search = () =>{
-        if(change==1){setChange(0)}else{setChange(1)} // useEffect 재실행을 위해 change값을 변경
-    }
 
     //팝업
     const [modalOn, setModalOn] = useState(false); 
@@ -82,19 +70,17 @@ const ChatDetailPage = () => {
     }
 
     useEffect(async () => {
-        const infomation = await axios.get("http://localhost:3001/admin/chat/detail?idx=" + id.idx + "&content=" + search)
+        const infomation = await axios.get("http://localhost:3001/admin/chat/detail?idx=" + id.idx)
         setInfo(infomation.data[1][0])
         setProfile(infomation.data[2])
         setChat(infomation.data[0])
-    }, [change]);
+    }, []);
 
     //팝업 url
     useEffect(async () => { 
         const detail = await axios.get("http://localhost:3001/admin/chat/detail/plus?idx=" + popupId)
         setPopup(detail.data[0])
     }, [modalOn]);
-
-    console.log(profile)
 
     const Modal = () => {
         return(
@@ -160,10 +146,7 @@ const ChatDetailPage = () => {
                                 <div className="chatInfo first-chatInfo">
                                     <p className="chatInfoText">채팅방 정보</p>
                                     <p className="InfoText"><span className="chatTitle">채팅방명</span><span className="info chatName">{infomation.title}</span></p>
-                                    <p className="InfoText"><span className="chatTitle">채팅인원</span><span className="info chatCount">{infomation.cnt}</span></p>
                                     <p className="InfoText"><span className="chatTitle">생성일자</span><span className="info chatRegdate">{infomation.createdAt}</span></p>
-                                    <p className="InfoText"><span className="chatTitle">채팅유형</span><span className="info chatType">{infomation.type}</span></p>
-                                    <p className="InfoText"><span className="chatTitle">신고여부</span><span className="info chatDec">{infomation.report}</span></p>
                                 </div>
                             }
                                 <div className="chatInfo">

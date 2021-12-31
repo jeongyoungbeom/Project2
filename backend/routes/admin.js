@@ -26,7 +26,6 @@ router.use(session({
     saveUninitialized: false, // 세션 ID를 발급하지 않는 세션도 다 기록할지 정함(기본 false)
     cookie : {
         httpOnly : true, // js로 cookie에 접근하지 못하게 하는 옵션
-        
     }
 }));
 
@@ -42,7 +41,6 @@ router.route('/admin/login').get((req, res) => {
                 res.write('<p>데이터가 안나옵니다.</p>')
                 res.end();
             }else{
-                
                 let dataLoading = true;
                 if(result == true){
                     req.session.user = {
@@ -214,11 +212,10 @@ router.route('/admin/member/room/detail').get((req, res) => {
 // 게시글 목록
 router.route('/admin/post').get((req, res) => {
     const cur = req.query.page;
-    const report = req.query.report;
     const date1 = req.query.date1;
     const date2 = req.query.date2;
     if (pool) {
-        adminPost(cur, report, date1, date2, (err, result) => {
+        adminPost(cur, date1, date2, (err, result) => {
             if (err) {
                 res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
                 res.write('<h2>메인데이터 출력 실패 </h2>');
@@ -252,12 +249,11 @@ router.route('/admin/post/detail').get((req, res) => {
 // 채팅 목록
 router.route('/admin/chat').get((req, res) => {
     const cur = req.query.page;
-    const report = req.query.report;
     const date1 = req.query.date1;
     const date2 = req.query.date2;
 
     if (pool) {
-        adminChat(cur, report, date1, date2, (err, result) => {
+        adminChat(cur, date1, date2, (err, result) => {
             if (err) {
                 res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
                 res.write('<h2>메인데이터 출력 실패 </h2>');
@@ -805,7 +801,7 @@ const adminMemberRoomDetail = function (roomIdx, callback) {
 }
 
 // 게시글 목록
-const adminPost = function (cur, report, date1, date2, callback) {
+const adminPost = function (cur, date1, date2, callback) {
     // 페이지 당 게시물 수
     const page_size = 10;
     // 페이지의 갯수
@@ -823,18 +819,16 @@ const adminPost = function (cur, report, date1, date2, callback) {
         } else {
             const date11 = date1 + " 00:00:00";
             const date22 = date2 + " 23:59:59";
-            if (report != "" && date1 != "") {
-                conn.query('select count(*) as cnt from post where report = ? and createdAt between ? and ? ', [report, date11, date22], (err, result) => {
+            if (date1 != "") {
+                conn.query('select count(*) as cnt from post where createdAt between ? and ? ', [date11, date22], (err, result) => {
                     if (err) {
                         console.log(err);
                         console.log('sql문 오류')
                     } else {
                         totalPageCount = result[0].cnt;
-
                         if (totalPageCount < 0) {
                             totalPageCount = 0;
                         }
-
                         // 전체 페이지수
                         const totalPage = Math.ceil(totalPageCount / page_size);
                         // 전체 세트수
@@ -856,7 +850,7 @@ const adminPost = function (cur, report, date1, date2, callback) {
                             endPage = totalPage;
                         }
 
-                        conn.query('select p.idx, p.content, m.name, p.createdAt, p.report from post as p join member as m on p.memberIdx = m.idx where report = ? and p.createdAt between ? and ? order by idx desc limit ?, ?', [report, date11, date22, no, page_size], (err, result) => {
+                        conn.query('select p.idx, p.content, m.name, p.createdAt, p.report from post as p join member as m on p.memberIdx = m.idx where p.createdAt between ? and ? order by idx desc limit ?, ?', [date11, date22, no, page_size], (err, result) => {
                             conn.release();
                             if (err) {
                                 callback(err, null);
@@ -868,97 +862,6 @@ const adminPost = function (cur, report, date1, date2, callback) {
                         });
                     }
                 });
-            } else if (report != "" || date1 != "") {
-                if (report) {
-                    conn.query('select count(*) as cnt from post where report = ?', [report], (err, result) => {
-                        if (err) {
-                            console.log(err);
-                            console.log('sql문 오류')
-                        } else {
-                            totalPageCount = result[0].cnt;
-
-                            if (totalPageCount < 0) {
-                                totalPageCount = 0;
-                            }
-
-                            // 전체 페이지수
-                            const totalPage = Math.ceil(totalPageCount / page_size);
-                            // 전체 세트수
-                            const totalSet = Math.ceil(totalPage / page_list_size);
-                            // 현재 세트 번호
-                            const curSet = Math.ceil(curPage / page_list_size);
-                            //  현재 세트내 출력될 첫 페이지
-                            const startPage = ((curSet - 1) * 5) + 1;
-                            // 현재 세트내 출력될 마지막 페이지
-                            let endPage = (startPage + page_list_size) - 1;
-
-                            if (curPage < 0) {
-                                no = 0
-                            } else {
-                                no = (curPage - 1) * 10
-                            }
-
-                            if (endPage > totalPage) {
-                                endPage = totalPage;
-                            }
-
-                            conn.query('select p.idx, p.content, m.name, p.createdAt, p.report from post as p join member as m on p.memberIdx = m.idx where report = ? order by idx desc limit ?, ?', [report, no, page_size], (err, result) => {
-                                conn.release();
-                                if (err) {
-                                    callback(err, null);
-                                    console.log('sql문 오류')
-                                    return;
-                                } else {
-                                    callback(null, { result, startPage, endPage, totalPage });
-                                }
-                            });
-                        }
-                    });
-                } else {
-                    conn.query('select count(*) as cnt from post where createdAt between ? and ? ', [date11, date22], (err, result) => {
-                        if (err) {
-                            console.log(err);
-                            console.log('sql문 오류')
-                        } else {
-                            totalPageCount = result[0].cnt;
-                            if (totalPageCount < 0) {
-                                totalPageCount = 0;
-                            }
-                            // 전체 페이지수
-                            const totalPage = Math.ceil(totalPageCount / page_size);
-                            // 전체 세트수
-                            const totalSet = Math.ceil(totalPage / page_list_size);
-                            // 현재 세트 번호
-                            const curSet = Math.ceil(curPage / page_list_size);
-                            //  현재 세트내 출력될 첫 페이지
-                            const startPage = ((curSet - 1) * 5) + 1;
-                            // 현재 세트내 출력될 마지막 페이지
-                            let endPage = (startPage + page_list_size) - 1;
-
-                            if (curPage < 0) {
-                                no = 0
-                            } else {
-                                no = (curPage - 1) * 10
-                            }
-
-                            if (endPage > totalPage) {
-                                endPage = totalPage;
-                            }
-
-                            conn.query('select p.idx, p.content, m.name, p.createdAt, p.report from post as p join member as m on p.memberIdx = m.idx where p.createdAt between ? and ? order by idx desc limit ?, ?', [date11, date22, no, page_size], (err, result) => {
-                                conn.release();
-                                if (err) {
-                                    console.log('1111111')
-                                    callback(err, null);
-                                    console.log('sql문 오류')
-                                    return;
-                                } else {
-                                    callback(null, { result, startPage, endPage, totalPage });
-                                }
-                            });
-                        }
-                    });
-                }
             } else {
                 conn.query('select count(*) as cnt from post', (err, result) => {
                     if (err) {
@@ -992,7 +895,7 @@ const adminPost = function (cur, report, date1, date2, callback) {
                             endPage = totalPage;
                         }
 
-                        conn.query('select p.idx, p.content, m.name, p.createdAt, p.report from post as p join member as m on p.memberIdx = m.idx order by idx desc limit ?, ?', [no, page_size], (err, result) => {
+                        conn.query('select p.idx, p.content, m.name, p.createdAt from post as p join member as m on p.memberIdx = m.idx order by idx desc limit ?, ?', [no, page_size], (err, result) => {
                             conn.release();
                             if (err) {
                                 callback(err, null);
@@ -1021,7 +924,7 @@ const adminPostDetail = function (postIdx, callback) {
             const sql2 = 'select imgName from img where postIdx = ?;';
             const sql2s = mysql.format(sql2, postIdx);
 
-            const sql3 = 'select r.content, m.email, r.createdAt from reply as r join member as m on r.memberIdx = m.idx where postIdx = ?;';
+            const sql3 = 'select r.content, m.email, m.img, r.createdAt from reply as r join member as m on r.memberIdx = m.idx where postIdx = ?;';
             const sql3s = mysql.format(sql3, postIdx);
 
             conn.query(sql1s + sql2s + sql3s, (err, result) => {
@@ -1038,7 +941,7 @@ const adminPostDetail = function (postIdx, callback) {
 }
 
 // 채팅 목록
-const adminChat = function (cur, report, date1, date2, callback) {
+const adminChat = function (cur, date1, date2, callback) {
     // 페이지 당 게시물 수
     const page_size = 10;
     // 페이지의 갯수
@@ -1055,57 +958,9 @@ const adminChat = function (cur, report, date1, date2, callback) {
             console.log(err);
         } else {
             console.log(date1)
-            console.log(report)
             const date11 = date1 + " 00:00:00";
             const date22 = date2 + " 23:59:59";
-            if (report != "" && date1 != "") {
-                console.log('3333')
-                conn.query('select count(*) as cnt from room where report = ? and createdAt between ? and ?', [report, date11, date22], (err, result) => {
-                    if (err) {
-                        console.log(err);
-                        console.log('sql문 오류')
-                    } else {
-                        totalPageCount = result[0].cnt;
-
-                        if (totalPageCount < 0) {
-                            totalPageCount = 0;
-                        }
-
-                        // 전체 페이지수
-                        const totalPage = Math.ceil(totalPageCount / page_size);
-                        // 전체 세트수
-                        const totalSet = Math.ceil(totalPage / page_list_size);
-                        // 현재 세트 번호
-                        const curSet = Math.ceil(curPage / page_list_size);
-                        //  현재 세트내 출력될 첫 페이지
-                        const startPage = ((curSet - 1) * 5) + 1;
-                        // 현재 세트내 출력될 마지막 페이지
-                        let endPage = (startPage + page_list_size) - 1;
-
-                        if (curPage < 0) {
-                            no = 0
-                        } else {
-                            no = (curPage - 1) * 10
-                        }
-
-                        if (endPage > totalPage) {
-                            endPage = totalPage;
-                        }
-
-                        conn.query('select r.idx, r.title, r.report, count(rm.roomIdx) as cnt, r.createdAt, r.type from room as r join room_mem as rm on r.idx = rm.roomIdx where r.createdAt between ? and ? and r.report = ? group by title order by idx desc limit ?, ?;', [date11, date22, report, no, page_size], (err, result) => {
-                            conn.release();
-                            if (err) {
-                                callback(err, null);
-                                console.log('sql문 오류')
-                                return;
-                            } else {
-                                callback(null, { result, startPage, endPage, totalPage });
-                            }
-                        });
-                    }
-                });
-            } else if (report == "" && date1 == "") {
-                console.log('11111')
+            if (date1 == "") {
                 conn.query('select count(*) as cnt from room', (err, result) => {
                     if (err) {
                         console.log(err);
@@ -1138,7 +993,7 @@ const adminChat = function (cur, report, date1, date2, callback) {
                             endPage = totalPage;
                         }
 
-                        conn.query('select r.idx, r.title, r.report, count(rm.roomIdx) as cnt, r.createdAt, r.type from room as r join room_mem as rm on r.idx = rm.roomIdx group by title order by idx desc limit ?, ?;', [no, page_size], (err, result) => {
+                        conn.query('select r.idx, r.title, r.createdAt from room as r join room_mem as rm on r.idx = rm.roomIdx group by title order by idx desc limit ?, ?;', [no, page_size], (err, result) => {
                             conn.release();
                             if (err) {
                                 callback(err, null);
@@ -1151,98 +1006,50 @@ const adminChat = function (cur, report, date1, date2, callback) {
                     }
                 });
             } else {
-                console.log('2222')
-                if (report) {
-                    conn.query('select count(*) as cnt from room where report = ?', [report], (err, result) => {
-                        if (err) {
-                            console.log(err);
-                            console.log('sql문 오류')
-                        } else {
-                            totalPageCount = result[0].cnt;
+                conn.query('select count(*) as cnt from room where createdAt between ? and ?', [date11, date22], (err, result) => {
+                    if (err) {
+                        console.log(err);
+                        console.log('sql문 오류')
+                    } else {
+                        totalPageCount = result[0].cnt;
 
-                            if (totalPageCount < 0) {
-                                totalPageCount = 0;
-                            }
-
-                            // 전체 페이지수
-                            const totalPage = Math.ceil(totalPageCount / page_size);
-                            // 전체 세트수
-                            const totalSet = Math.ceil(totalPage / page_list_size);
-                            // 현재 세트 번호
-                            const curSet = Math.ceil(curPage / page_list_size);
-                            //  현재 세트내 출력될 첫 페이지
-                            const startPage = ((curSet - 1) * 5) + 1;
-                            // 현재 세트내 출력될 마지막 페이지
-                            let endPage = (startPage + page_list_size) - 1;
-
-                            if (curPage < 0) {
-                                no = 0
-                            } else {
-                                no = (curPage - 1) * 10
-                            }
-
-                            if (endPage > totalPage) {
-                                endPage = totalPage;
-                            }
-
-                            conn.query('select r.idx, r.title, r.report, count(rm.roomIdx) as cnt, r.createdAt, r.type from room as r join room_mem as rm on r.idx = rm.roomIdx where r.report = ? group by title order by idx desc limit ?, ?;', [report, no, page_size], (err, result) => {
-                                conn.release();
-                                if (err) {
-                                    callback(err, null);
-                                    console.log('sql문 오류')
-                                    return;
-                                } else {
-                                    callback(null, { result, startPage, endPage, totalPage });
-                                }
-                            });
+                        if (totalPageCount < 0) {
+                            totalPageCount = 0;
                         }
-                    });
-                } else {
-                    conn.query('select count(*) as cnt from room where createdAt between ? and ?', [date11, date22], (err, result) => {
-                        if (err) {
-                            console.log(err);
-                            console.log('sql문 오류')
+
+                        // 전체 페이지수
+                        const totalPage = Math.ceil(totalPageCount / page_size);
+                        // 전체 세트수
+                        const totalSet = Math.ceil(totalPage / page_list_size);
+                        // 현재 세트 번호
+                        const curSet = Math.ceil(curPage / page_list_size);
+                        //  현재 세트내 출력될 첫 페이지
+                        const startPage = ((curSet - 1) * 5) + 1;
+                        // 현재 세트내 출력될 마지막 페이지
+                        let endPage = (startPage + page_list_size) - 1;
+
+                        if (curPage < 0) {
+                            no = 0
                         } else {
-                            totalPageCount = result[0].cnt;
-
-                            if (totalPageCount < 0) {
-                                totalPageCount = 0;
-                            }
-
-                            // 전체 페이지수
-                            const totalPage = Math.ceil(totalPageCount / page_size);
-                            // 전체 세트수
-                            const totalSet = Math.ceil(totalPage / page_list_size);
-                            // 현재 세트 번호
-                            const curSet = Math.ceil(curPage / page_list_size);
-                            //  현재 세트내 출력될 첫 페이지
-                            const startPage = ((curSet - 1) * 5) + 1;
-                            // 현재 세트내 출력될 마지막 페이지
-                            let endPage = (startPage + page_list_size) - 1;
-
-                            if (curPage < 0) {
-                                no = 0
-                            } else {
-                                no = (curPage - 1) * 10
-                            }
-
-                            if (endPage > totalPage) {
-                                endPage = totalPage;
-                            }
-
-                            conn.query('select r.idx, r.title, r.report, count(rm.roomIdx) as cnt, r.createdAt, r.type from room as r join room_mem as rm on r.idx = rm.roomIdx where r.createdAt between ? and ? group by title order by idx desc limit ?, ?;', [date11, date22, no, page_size], (err, result) => {
-                                conn.release();
-                                if (err) {
-                                    callback(err, null);
-                                    console.log('sql문 오류')
-                                    return;
-                                } else {
-                                    callback(null, { result, startPage, endPage, totalPage });
-                                }
-                            });
+                            no = (curPage - 1) * 10
                         }
-                    });
-                }
+
+                        if (endPage > totalPage) {
+                            endPage = totalPage;
+                        }
+
+                        conn.query('select r.idx, r.title, r.createdAt from room as r join room_mem as rm on r.idx = rm.roomIdx where r.createdAt between ? and ? group by title order by idx desc limit ?, ?;', [date11, date22, no, page_size], (err, result) => {
+                            conn.release();
+                            if (err) {
+                                callback(err, null);
+                                console.log('sql문 오류')
+                                return;
+                            } else {
+                                callback(null, { result, startPage, endPage, totalPage });
+                            }
+                        });
+                    }
+                });
             }
         }
     });
