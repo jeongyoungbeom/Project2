@@ -39,7 +39,7 @@
 ## 구동 화면
   ### 메인 화면1
 
-![main1](/image/사용자_로그인&친구추가.gif)
+![main1](/image/사용자_로그인친구추가.gif)
   ### 로그인 화면
 
 ![login](/image/login.png) 
