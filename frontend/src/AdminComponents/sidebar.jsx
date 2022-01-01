@@ -15,7 +15,7 @@ const SideBarForm = styled.div`
     .link-main { margin-left: 2.5rem; margin-top: 5rem; box-shadow: 3px 3px 3px 3px rgb(240, 240, 240); border-radius: 10px; padding-left: 1rem; width: 18rem; }
     .small-text { color: #999; text-align: center; font-size: 1.1rem; margin-top: 4rem; margin-bottom: 5rem; }
 `;
-
+const cookie = document.cookie.substring(6); // cookie값
 const SideBar = () => {
     
     let location = window.location.pathname;
@@ -45,7 +45,7 @@ const SideBar = () => {
                 <Link to="/admin/question" className="side-link" id="question"><i class="fab fa-quora"></i>문의사항</Link>
             </div>
             <div className="link-form link-main">
-                <Link to="/"><img src="/img/admin/us_main.png" /><p className="sub-link">Go WebSite <i class="fas fa-angle-right"></i></p></Link>
+                <Link to={"/main?idx="+cookie}><img src="/img/admin/us_main.png" /><p className="sub-link">Go WebSite <i class="fas fa-angle-right"></i></p></Link>
             </div>
             <div className="small-form">
                 <p className="small-text">Made In Korea</p>

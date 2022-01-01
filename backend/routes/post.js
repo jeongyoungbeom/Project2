@@ -34,10 +34,9 @@ router.route('/post/upload').post(upload.array('fileupload', 10), (req, res) => 
     const memberIdx = req.body.memberIdx;
     const content = req.body.content;
     const file = req.files;
-    const hashTag = req.body.hashTag;
 
     if (pool) {
-        postUpload(memberIdx, content, file, hashTag, (err, result) => {
+        postUpload(memberIdx, content, file, (err, result) => {
             if (err) {
                 res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
                 res.write('<h2>메인데이터 출력 실패 </h2>');
@@ -55,10 +54,9 @@ router.route('/post/edit').post(upload.array('fileupload', 10), (req, res) => {
     const idx = req.body.idx;
     const content = req.body.content;
     const file = req.files;
-    const hashTag = req.body.hashTag;
 
     if (pool) {
-        postEdit(idx, content, file, hashTag, (err, result) => {
+        postEdit(idx, content, file, (err, result) => {
             if (err) {
                 res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
                 res.write('<h2>메인데이터 출력 실패 </h2>');
@@ -146,7 +144,7 @@ router.route('/post/detail').get((req, res) => {
 
 
 // 게시글 디테일
-const postDetail = function(postIdx, callback){
+const postDetail = function (postIdx, callback) {
     pool.getConnection((err, conn) => {
         if (err) {
             console.log(err);
@@ -174,7 +172,7 @@ const postDetail = function(postIdx, callback){
 }
 
 // 게시글 등록
-const postUpload = function (memberIdx, content, file, hashTag, callback) {
+const postUpload = function (memberIdx, content, file, callback) {
     pool.getConnection((err, conn) => {
         if (err) {
             console.log(err);
@@ -186,69 +184,6 @@ const postUpload = function (memberIdx, content, file, hashTag, callback) {
                     let postIdx = result1.insertId;
                     conn.query('insert into img(postIdx, imgPath, imgName) values(?, ?, ?)', [postIdx, filePath, fileName])
                 }
-
-                for (let i = 0; i < hashTag.length; i++) {
-                    const tagName = hashTag[i];
-                    conn.query('select (select idx from hashTag where name = ? limit 1) as success;', [tagName], (err, result2) => {
-                        if(result2[0].success != null) {
-                            conn.query('insert into post_hashTag(postIdx, hashTagIdx) values(?, ?)', [result1.insertId, result2[0].success])
-                        } else {
-                            conn.query('insert into hashTag(name) values(?)', [tagName], (err, result3) => {
-                                conn.query('insert into post_hashTag(postIdx, hashTagIdx) values(?, ?)', [result1.insertId, result3.insertId])
-                            });
-                        }
-                    });
-                }
-
-                conn.release();
-                if (err) {
-                    callback(err, null);
-                    return;
-                } else {
-                    callback(null, true);
-                }
-            })
-        }
-    });
-}
-
-// 게시글 수정
-const postEdit = function (idx, content, file, hashTag, callback) {
-    pool.getConnection((err, conn) => {
-        if (err) {
-            console.log(err);
-        } else {
-            conn.query('update post set content = ? where idx = ?', [content, idx], (err, result1) => {
-                conn.query('select imgName from img where postIdx = ?', [idx], (err, result2) => {
-                    for (let i = 0; i < result2.length; i++) {
-                        fs.unlink('C:/project/us/frontend/public/uploads/'+result2[i].imgName, (err) => {
-                            console.log(err);
-                        });
-                    } 
-                });
-
-                conn.query('delete from post_hashTag where postIdx = ?', [idx]);
-                for (let i = 0; i < hashTag.length; i++) {
-                    const tagName = hashTag[i];
-                    conn.query('select (select idx from hashTag where name = ? limit 1) as success;', [tagName], (err, result2) => {
-                        if(result2[0].success != null) {
-                            conn.query('insert into post_hashTag(postIdx, hashTagIdx) values(?, ?)', [idx, result2[0].success])
-                        } else {
-                            conn.query('insert into hashTag(name) values(?)', [tagName], (err, result3) => {
-                                conn.query('insert into post_hashTag(postIdx, hashTagIdx) values(?, ?)', [idx, result3.insertId])
-                            });
-                        }
-                    });
-                }
-                
-                conn.query('delete from img where postIdx = ?', [idx]);
-
-                for (let i = 0; i < file.length; i++) {
-                    let fileName = file[i].filename;
-                    let filePath = file[i].path;
-                    conn.query('insert into img(postIdx, imgPath, imgName) values(?, ?, ?)', [idx, filePath, fileName])
-                }
-
                 conn.release();
                 if (err) {
                     callback(err, null);
@@ -257,6 +192,49 @@ const postEdit = function (idx, content, file, hashTag, callback) {
                     callback(null, true);
                 }
             });
+        }
+    });
+}
+
+// 게시글 수정
+const postEdit = function (idx, content, file, callback) {
+    pool.getConnection((err, conn) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (file == "") {
+                conn.query('update post set content = ? where idx = ?', [content, idx], (err, result1) => {
+                    conn.release();
+                    if (err) {
+                        callback(err, null);
+                        return;
+                    } else {
+                        callback(null, true);
+                    }
+                });
+            } else {
+                conn.query('update post set content = ? where idx = ?', [content, idx], (err, result1) => {
+                    conn.query('select imgName from img where postIdx = ?', [idx], (err, result2) => {
+                        for (let i = 0; i < result2.length; i++) {
+                            fs.unlink('C:/Users/jybeo/Desktop/us2/frontend/public/uploads/' + result2[i].imgName, (err) => {
+                            });
+                        }
+                    });
+                    conn.query('delete from img where postIdx = ?', [idx]);
+                    for (let i = 0; i < file.length; i++) {
+                        let fileName = file[i].filename;
+                        let filePath = file[i].path;
+                        conn.query('insert into img(postIdx, imgPath, imgName) values(?, ?, ?)', [idx, filePath, fileName])
+                    }
+                    conn.release();
+                    if (err) {
+                        callback(err, null);
+                        return;
+                    } else {
+                        callback(null, true);
+                    }
+                });
+            }
         }
     });
 }
@@ -269,42 +247,18 @@ const postDelete = function (idx, callback) {
         } else {
             conn.query('select imgName from img where postIdx = ?', [idx], (err, result) => {
                 for (let i = 0; i < result.length; i++) {
-                    fs.unlink('uploads/images/'+result[i].imgName, (err) => {
-                        console.log(err);
+                    fs.unlink('uploads/images/' + result[i].imgName, (err) => {
                     });
                 }
                 conn.query('delete from post where idx = ?', [idx], (err, result) => {
                     conn.release();
-                    if(err) {
+                    if (err) {
                         callback(err, null);
                         return;
                     } else {
                         callback(null, true);
                     }
                 })
-                // conn.query('delete from img where postIdx = ?', [idx], (err, result) => {
-                //     conn.query('delete from post_like where postIdx = ?', [idx]);
-                
-                //     conn.query('select idx from reply where postIdx = ?', [idx], (err, result) => {
-                //         if(err) {
-                //             console.log(err);
-                //         }
-                //         for (let i = 0; i < result.length; i++) {
-                //             conn.query('delete from reply_like where replyIdx = ?', [result[0].idx]);          
-                //         }
-                //     })
-
-                //     conn.query('delete from reply where postIdx = ?', [idx]);
-                //     conn.query('delete from post_hashtag where postIdx = ?', [idx]);
-                //     conn.query('delete from post where idx = ?', [idx]);
-                //     conn.release();
-                //     if(err) {
-                //         callback(err, null);
-                //         return;
-                //     } else {
-                //         callback(null, true);
-                //     }
-                // })
             });
         }
     });
@@ -317,7 +271,7 @@ const postLike = function (postIdx, memberIdx, callback) {
             console.log(err);
         } else {
             conn.query('select exists (select idx from post_like where postIdx = ? and memberIdx = ? limit 1) as success;', [postIdx, memberIdx], (err, result) => {
-                if(result[0].success == 1) {
+                if (result[0].success == 1) {
                     conn.query('delete from post_like where postIdx = ? and memberIdx = ?', [postIdx, memberIdx]);
                 } else {
                     conn.query('insert into post_like(postIdx, memberIdx) values(?, ?)', [postIdx, memberIdx]);

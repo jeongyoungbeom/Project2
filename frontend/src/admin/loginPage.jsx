@@ -85,15 +85,25 @@ function Login(){
     const login = async () => {
         let password = document.getElementById('pwInput');
         let idx = document.getElementById('emailInput')
-        let log = await axios.get('http://localhost:3001/admin/login?email='+idx.value+"&userPw="+password.value)
-        if(log.data===true){
-            alert('환영합니다')
-            window.location.href="/admin/main"
-        }else{
-            alert('이메일/비밀번호를 확인하세요')
-            window.location.reload()
-        } 
+        await axios({
+            method: "post",
+            url:`http://localhost:3001/admin/login`,
+            data: {
+                email: idx.value,
+                userPw: password.value
+            }
+        })
+        .then(res => {
+            if(res.data===false){
+                window.location.reload()
+                alert('이메일/비밀번호를 확인하세요')
+            }else{
+                alert('환영합니다')
+                window.location.href="/admin/main"
+            } 
+        })
     }
+    
     return (
         <Form>
         <LoginForm>

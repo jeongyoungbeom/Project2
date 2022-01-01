@@ -1,6 +1,5 @@
 const express = require('express');
 const bodyParser = require('body-parser'); // post방식
-const ejs = require('ejs');
 const mysql = require('mysql');
 const logger = require('morgan'); // 로그모듈
 const config = require('../config/config');
@@ -11,10 +10,8 @@ const bcrypt = require('bcrypt'); // 암호화 (현업에서 salt랑 가장 많�
 const saltRounds = 10; // 해킹 방지를 위한 접근 제한 변수 
 const nodemailer = require('nodemailer'); // 임시 비밀번호 보내기
 const multer = require('multer'); // 이미지 업로드
-const { ignore } = require('nodemon/lib/rules');
 const cors = require('cors');
 
-const app = express();
 const router = express.Router(); // 라우터 사용(특정 경로로 들어오는 요청에 대해 함수를 수행 시킬 수 있는 기능을 express가 제공)
 
 router.use(bodyParser.urlencoded({ extended: false }))
@@ -23,6 +20,7 @@ router.use(logger('dev'));
 router.use(cookieParser());// 쿠기와 세션을 미들웨어로 등록
 router.use(cors({ origin: 'http://localhost:3000', credentials: true, methods: "put,get,post,delete,options" }));
 var sessionStore = new MySQLStore(config);
+
 // 세션 환경세팅
 router.use(session({
     key: "first",
@@ -34,9 +32,6 @@ router.use(session({
         httpOnly: true, // js로 cookie에 접근하지 못하게 하는 옵션
     }
 }));
-
-app.set('view engine', 'ejs'); // 화면 engine을 ejs로 설정
-app.set('views', '../views'); // view 경로 설정 
 
 const pool = mysql.createPool(config);
 
@@ -53,7 +48,6 @@ router.route('/member/regist').post((req, res) => {
     const agreement2 = req.body.agreement2;
 
     console.log(`email: ${email}, userpw:${userPw}, name:${name}, tel:${tel}, code:${code}, agreement1:${agreement1}, agreement2:${agreement2}, gender:${gender}`);
-
     if (pool) {
         joinMember(email, userPw, name, tel, gender, code, agreement1, agreement2, (err, result) => {
             if (err) {
@@ -91,11 +85,6 @@ const joinMember = function (email, userPw, name, tel, gender, code, agreement1,
         }
     });
 }
-
-// 로그인 
-router.route('/member/login').get((req, res) => {
-    res.render('login.ejs');
-});
 
 router.route('/member/login').post((req, res) => {
     const email = req.body.email;
@@ -154,9 +143,6 @@ router.route('/member/login').post((req, res) => {
 })
 
 
-
-
-
 const LoginMember = function (email, userPw, callback) {
     pool.getConnection((err, conn) => {
         if (err) {
@@ -204,7 +190,6 @@ router.route('/member/findId').post((req, res) => {
             console.log(err);
         } else {
             if (data == "") {
-                console.log('ddd');
                 res.send(false);
                 res.end();
                 return
@@ -223,6 +208,8 @@ router.route('/member/findId').post((req, res) => {
 function emailSecurity(data) {
     var id = data[0].email.split('@')[0];
     var mail = data[0].email.split('@')[1];
+    console.log(id)
+    console.log(mail)
     var maskingId = function (id) {
         var splitId = id.substring(0, 1);
         for (var i = 1; i < id.length; i++) {
@@ -245,8 +232,6 @@ function emailSecurity(data) {
 router.route('/member/findPassword').post((req, res) => {
     const tel = req.body.tel;
     const email = req.body.email;
-    const userPw = req.body.userPw;
-
 
     pool.query('select tel,email,userPw from member where tel=? and email=?', [tel, email], (err, data) => {
         console.log(data);
@@ -332,7 +317,7 @@ const SendMember = function (randomPassword, email, callback) {
             console.log(err);
         } else {
             const encryptedPassword = bcrypt.hashSync(randomPassword, saltRounds) // 비밀번호 암호화  
-            const sql = conn.query('update member set userPw=? where email=?', [encryptedPassword, email], (err, result) => {
+            conn.query('update member set userPw=? where email=?', [encryptedPassword, email], (err, result) => {
                 conn.release();
                 if (err) {
                     console.log(err);
@@ -350,7 +335,6 @@ router.route('/member/ComparePassword').post((req, res) => {
     const userPw = req.body.userPw;
     const userPw2 = req.body.userPw2;
     const idx = req.body.idx;
-    console.log(`userPw : ${userPw}, userPw2:${userPw2}, idx:${idx}`);
 
     if (pool) {
         UpdatePassword(userPw, userPw2, idx, (err, result) => {
@@ -373,20 +357,14 @@ const UpdatePassword = function (userPw, userPw2, idx, callback) {
             console.log(err);
         } else {
             conn.query('select userPw from member where idx=?', [idx], (err1, result1) => {
-                console.log(result1);
                 if (bcrypt.compareSync(userPw, result1[0].userPw) == false) {
-                    console.log(bcrypt.compareSync(userPw, result1[0].userPw))
-                    console.log('password 틀림')
                     callback(null, false);
                     return;
                 } else {
-                    console.log('패스워드 맞음');
                     if (userPw != userPw2) {
                         const encryptedPassword = bcrypt.hashSync(userPw2, saltRounds) // 비밀번호 암호화
-                        console.log(encryptedPassword)
                         conn.query('update member set userPw=? where idx=?', [encryptedPassword, idx], (err, result) => {
                             conn.release();
-                            console.log(result);
                             if (err) {
                                 callback(null, false);
                                 return;
@@ -405,7 +383,6 @@ const UpdatePassword = function (userPw, userPw2, idx, callback) {
 // 문의,비밀번호변경 - 멤버정보
 router.route('/member/imgandname').get((req, res) => {
     const idx = req.query.idx;
-
     if (pool) {
         imgandname(idx, (err, result) => {
             if (err) {
@@ -426,7 +403,6 @@ const imgandname = function (idx, callback) {
                 conn.release();
                 if (err) {
                     callback(err, null);
-                    console.log('select문 오류');
                     return;
                 } else {
                     callback(null, result);
@@ -461,7 +437,6 @@ const edit = function (idx, callback) {
                 conn.release();
                 if (err) {
                     callback(err, null);
-                    console.log('select문 오류');
                     return;
                 } else {
                     callback(null, result);
@@ -570,7 +545,6 @@ const deleteMember = function (idx, callback) {
                     callback(err, null);
                     return;
                 } else {
-                    console.log("삭제완료!");
                     callback(null, result);
                 }
             });
