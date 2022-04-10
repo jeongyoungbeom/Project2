@@ -12,7 +12,7 @@ module.exports = class Chat extends Sequelize.Model {
                 allowNull : false,
                 defaultValue : 'TEXT'
             },
-            createAt : {
+            createdAt : {
                 type : Sequelize.DATE,
                 allowNull : false,
                 defaultValue : Sequelize.NOW

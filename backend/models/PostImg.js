@@ -11,7 +11,7 @@ module.exports = class PostImg extends Sequelize.Model {
                 type : Sequelize.STRING(200),
                 allowNull : false
             },
-            createAt : {
+            createdAt : {
                 type : Sequelize.DATE,
                 allowNull : false,
                 defaultValue : Sequelize.NOW

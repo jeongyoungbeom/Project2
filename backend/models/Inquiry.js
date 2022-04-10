@@ -11,7 +11,7 @@ module.exports = class Inquiry extends Sequelize.Model {
                 type : Sequelize.STRING(300),
                 allowNull : false
             },
-            createAt : {
+            createdAt : {
                 type : Sequelize.DATE,
                 allowNull : false,
                 defaultValue : Sequelize.NOW

@@ -3,8 +3,8 @@ const mysql = require('mysql');
 const config = require('../config/config.json');
 const bodyParser = require('body-parser');
 const pool = mysql.createPool(config);
-const cors = require('cors');
 
+const cors = require('cors');
 const router = express.Router()
 router.use(bodyParser.urlencoded({ extended: false }))
 router.use(cors());

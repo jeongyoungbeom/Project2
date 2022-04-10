@@ -1,32 +1,65 @@
 const express = require('express');
+const Member = require('../models/Member')
+const Post = require('../models/Post')
+const { Op } = require("sequelize");
+
 const mysql = require('mysql');
 const config = require('../config/config');
-const bodyParser = require('body-parser');
+const { sequelize } = require('../models/Member');
 const pool = mysql.createPool(config);
 
 const router = express.Router()
-router.use(bodyParser.urlencoded({ extended: false }))
 
-// 로그인 후 이동되는 메인페이지
-router.route('/main').get((req, res) => {
-    const idx = req.query.idx;
-    if (pool) {
-        main(idx, (err, result) => {
-            if (err) {
-                res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
-                res.write('<h2>메인데이터 출력 실패 </h2>');
-                res.write('<p>데이터가 안나옵니다.</p>')
-                res.end();
-            } else {
-                res.send(result);
+router.get('/main', async (req, res, next) => {
+    try {
+        const member = await Member.findAll({
+            attributes : ['email', 'name', 'img'],
+            where : {
+                id : req.query.id
             }
         });
-    } else {
-        res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
-        res.write('<p>mongodb 데이터베이스에 연결하지 못했습니다 </p>')
-        res.end();
+
+        const postCnt = await Post.count({
+            where : {
+                memberId : req.query.id
+            }
+        });
+
+        const friend = await Member.findOne({
+            include : [
+                {
+                    model: Member,
+                    as: 'Members',
+                    attributes : [[sequelize.fn('COUNT', req.query.id), 'friendCnt']]
+                }
+            ]
+        });
+
+        let friendCnt;
+        if (friend.Members.length){
+            friendCnt = friend.get('Members')[0].get('friendCnt');
+        } else {
+            friendCnt = 0;
+        }
+        
+        const friendInform = await Member.findAll({
+            attributes : ['id', 'img', 'name'],
+            where : {
+                id : {
+                    [Op.in] : sequelize.literal(`(
+                        select f.friendId from members as m join friend as f on m.id = f.memberId where m.id = `+ req.query.id +`
+                    )`)
+                }
+            }
+        });
+        
+        let array = [{member : member}, {postCnt : postCnt}, {friendCnt : friendCnt}, {friendInform : friendInform}];
+        res.status(200).json(array)
+    } catch (err) { 
+        console.error(err);
+        next(err);
     }
-});
+})
 
 // 메인페이지 게시글 부분
 router.route('/main/post').get((req, res) => {
@@ -212,36 +245,6 @@ const insertRoom = function(senderIdx, receiverIdx, callback) {
     })
 }
 
-// 메인페이지
-const main = function (idx, callback) {
-    pool.getConnection((err, conn) => {
-        if (err) {
-            console.log(err);
-        } else {
-            const sql1 = 'select email, message, name, img from member where idx = ?;';
-            const sql1s = mysql.format(sql1, idx);
-
-            const sql2 = 'select count(*) as postCnt from post where memberIdx = ?;'
-            const sql2s = mysql.format(sql2, idx);
-
-            const sql3 = 'select count(*) as friendCnt from friend where memberIdx = ?;'
-            const sql3s = mysql.format(sql3, idx);
-
-            const sql4 = 'select idx, img, name from member where idx in (select f.friendIdx from member as m join friend as f on m.idx = f.memberIdx where m.idx = ?);';
-            const sql4s = mysql.format(sql4, idx);
-
-            conn.query(sql1s + sql2s + sql3s + sql4s, (err, result) => {
-                conn.release();
-                if (err) {
-                    callback(err, null);
-                    return;
-                } else {
-                    callback(null, result);
-                }
-            });
-        }
-    });
-}
 
 // 메인페이지 게시글
 const mainPost = function (idx, callback) {

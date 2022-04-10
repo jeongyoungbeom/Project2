@@ -12,7 +12,7 @@ module.exports = class Room extends Sequelize.Model {
                 allowNull : false,
                 defaultValue : 'N'
             },
-            createAt : {
+            createdAt : {
                 type : Sequelize.DATE,
                 allowNull : false,
                 defaultValue : Sequelize.NOW

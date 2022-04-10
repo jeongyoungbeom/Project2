@@ -3,7 +3,7 @@ const Sequelize = require('sequelize');
 module.exports = class RoomMem extends Sequelize.Model {
     static init(sequelize) {
         return super.init({
-            createAt : {
+            createdAt : {
                 type : Sequelize.DATE,
                 allowNull : false,
                 defaultValue : Sequelize.NOW
