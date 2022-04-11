@@ -27,6 +27,9 @@ module.exports = class Member extends Sequelize.Model {
             img : {
                 type : Sequelize.STRING(100)
             },
+            message : {
+                type : Sequelize.STRING(500)
+            },
             createdAt : {
                 type : Sequelize.DATE,
                 allowNull : false,
@@ -52,7 +55,7 @@ module.exports = class Member extends Sequelize.Model {
         db.Member.hasMany(db.RoomMem, { foreignKey : 'memberId', sourceKey : 'id'})
         db.Member.hasMany(db.Chat, { foreignKey : 'memberId', sourceKey : 'id'})
         db.Member.hasMany(db.Inquiry, { foreignKey : 'memberId', sourceKey : 'id'})
-        db.Member.belongsToMany(db.Member, {as: 'Members', through : 'friend', foreignKey : 'memberId'})
-        db.Member.belongsToMany(db.Member, {as: 'Friends', through : 'friend', foreignKey : 'friendId'})
+        db.Member.belongsToMany(db.Member, {as: 'Members', through : 'friends', foreignKey : 'MemberId'})
+        db.Member.belongsToMany(db.Member, {as: 'Friends', through : 'friends', foreignKey : 'FriendId'})
     };
 };
