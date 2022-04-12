@@ -92,7 +92,7 @@ router.get('/main/post', async (req, res, next) => {
 // 메인페이지 채팅
 router.get('/main/chat', async (req, res, next) => {
     try {
-        sequelize.query('select r.title, r.id as roomId, rm.memberId as friend, m.img, m.name, (select content from chats where createdAt = (select max(createdAt) from chats where roomId = r.id)) as chat, (select max(createdAt) from chats where roomId = r.id) as time from roommems as rm join members as m on rm.memberId = m.id join rooms as r on r.id = rm.roomId where r.title in (select title from roommems as rm join rooms as r on rm.roomId = r.id where rm.memberId = :id ) and m.id != :id group by title;', { replacements: { id: req.query.id }, type: sequelize.QueryTypes.SELECT })
+        await sequelize.query('select r.title, r.id as roomId, rm.memberId as friend, m.img, m.name, (select content from chats where createdAt = (select max(createdAt) from chats where roomId = r.id)) as chat, (select max(createdAt) from chats where roomId = r.id) as time from roommems as rm join members as m on rm.memberId = m.id join rooms as r on r.id = rm.roomId where r.title in (select title from roommems as rm join rooms as r on rm.roomId = r.id where rm.memberId = :id ) and m.id != :id group by title;', { replacements: { id: req.query.id }, type: sequelize.QueryTypes.SELECT })
             .then(data => {
                 res.json(data)
             })
@@ -104,44 +104,16 @@ router.get('/main/chat', async (req, res, next) => {
 
 router.get('/main/friend/list', async (req, res, next) => {
     try {
-        const list = await Member.findAll({
-            attributes: [],
-            include: {
-                attributes : ['id', 'img', 'email', 'name', 'message'],
-                model: Member,
-                as: 'Members'
-            },
-            where: {
-                id: req.query.id
-            }
-        })
-        console.log(list)
-        res.json(list)
+        await sequelize.query('select m.id, m.img, m.email, m.name, m.message from members as m join friends as f on m.id = f.friendId where f.memberId = :id;',
+            { replacements: { id: req.query.id }, type: sequelize.QueryTypes.SELECT })
+            .then(data => {
+                res.json(data)
+            })
     } catch (err) {
         console.log(err);
         next(err);
     }
 })
-
-// 친구 목록
-const friendList = function (idx, callback) {
-    pool.getConnection((err, conn) => {
-        if (err) {
-            console.log(err);
-        } else {
-            conn.query('select m.idx, m.img, m.email, m.name, m.message from friend as f join member as m on m.idx = f.friendIdx where f.memberIdx = ?;', [idx], (err, result) => {
-                conn.release();
-                if (err) {
-                    callback(err, null);
-                    return;
-                } else {
-                    callback(null, result);
-                }
-            });
-        }
-    });
-}
-
 
 // 친구 검색
 router.route('/main/friend').post((req, res) => {
@@ -163,6 +135,32 @@ router.route('/main/friend').post((req, res) => {
         res.end();
     }
 });
+
+// 친구 검색
+const invitation = function (invitationCode, idx, callback) {
+    pool.getConnection((err, conn) => {
+        if (err) {
+            console.log(err);
+        } else {
+            let flag = false;
+            let fIdx = null;
+            conn.query('select idx, name, message, img, email from member where code = ?;', [invitationCode], (err, result1) => {
+                if (result1 !== "") fIdx = result1[0].idx;
+                conn.query('select exists (select idx from friend where memberIdx = ? and friendIdx = ? limit 1) as success;', [idx, fIdx], (err, result2) => {
+                    if (result2[0].success === 1) flag = true;
+                    conn.release();
+                    if (err) {
+                        callback(err, null);
+                        return;
+                    } else {
+                        callback(null, { result1, flag });
+                    }
+                })
+
+            });
+        }
+    });
+}
 
 // 친구 추가
 router.route('/main/insert_friend').post((req, res) => {
@@ -246,34 +244,6 @@ const insertRoom = function (senderIdx, receiverIdx, callback) {
     })
 }
 
-
-
-// 친구 검색
-const invitation = function (invitationCode, idx, callback) {
-    pool.getConnection((err, conn) => {
-        if (err) {
-            console.log(err);
-        } else {
-            let flag = false;
-            let fIdx = null;
-            conn.query('select idx, name, message, img, email from member where code = ?;', [invitationCode], (err, result1) => {
-                if (result1 != "") fIdx = result1[0].idx;
-                conn.query('select exists (select idx from friend where memberIdx = ? and friendIdx = ? limit 1) as success;', [idx, fIdx], (err, result2) => {
-                    if (result2[0].success == 1) flag = true;
-                    conn.release();
-                    if (err) {
-                        callback(err, null);
-                        return;
-                    } else {
-                        callback(null, { result1, flag });
-                    }
-                })
-
-            });
-        }
-    });
-}
-
 // 친구 추가
 const insertFriend = function (fIdx, idx, callback) {
     pool.getConnection((err, conn) => {
@@ -281,7 +251,7 @@ const insertFriend = function (fIdx, idx, callback) {
             console.log(err)
         } else {
             conn.query('select exists (select idx from friend where memberIdx = ? and friendIdx = ? limit 1) as success;', [idx, fIdx], (err, result) => {
-                if (result[0].success == 1) {
+                if (result[0].success === 1) {
                     conn.query('delete from friend where memberIdx = ? and friendIdx = ?', [idx, fIdx]);
                     conn.query('delete from friend where memberIdx = ? and friendIdx = ?', [fIdx, idx]);
                 } else {
@@ -293,7 +263,7 @@ const insertFriend = function (fIdx, idx, callback) {
                 if (err) {
                     callback(err, null)
                     console.log('select문 오류')
-                    return;
+
                 } else {
                     callback(null, true);
                 }
