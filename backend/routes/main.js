@@ -3,10 +3,10 @@ const Member = require('../models/Member')
 const Post = require('../models/Post')
 const PostImg = require('../models/PostImg')
 const { Op } = require("sequelize");
+const { sequelize } = require('../models/Member');
 
 const mysql = require('mysql');
 const config = require('../config/config');
-const { sequelize } = require('../models/Member');
 const pool = mysql.createPool(config);
 
 const router = express.Router()
@@ -92,10 +92,8 @@ router.get('/main/post', async (req, res, next) => {
 // 메인페이지 채팅
 router.get('/main/chat', async (req, res, next) => {
     try {
-        await sequelize.query('select r.title, r.id as roomId, rm.memberId as friend, m.img, m.name, (select content from chats where createdAt = (select max(createdAt) from chats where roomId = r.id)) as chat, (select max(createdAt) from chats where roomId = r.id) as time from roommems as rm join members as m on rm.memberId = m.id join rooms as r on r.id = rm.roomId where r.title in (select title from roommems as rm join rooms as r on rm.roomId = r.id where rm.memberId = :id ) and m.id != :id group by title;', { replacements: { id: req.query.id }, type: sequelize.QueryTypes.SELECT })
-            .then(data => {
-                res.json(data)
-            })
+        const chat = await sequelize.query('select r.title, r.id as roomId, rm.memberId as friend, m.img, m.name, (select content from chats where createdAt = (select max(createdAt) from chats where roomId = r.id)) as chat, (select max(createdAt) from chats where roomId = r.id) as time from roommems as rm join members as m on rm.memberId = m.id join rooms as r on r.id = rm.roomId where r.title in (select title from roommems as rm join rooms as r on rm.roomId = r.id where rm.memberId = :id ) and m.id != :id group by title;', { replacements: { id: req.query.id }, type: sequelize.QueryTypes.SELECT })
+        res.json(chat);
     } catch (err) {
         console.log(err);
         next(err);
@@ -104,11 +102,9 @@ router.get('/main/chat', async (req, res, next) => {
 
 router.get('/main/friend/list', async (req, res, next) => {
     try {
-        await sequelize.query('select m.id, m.img, m.email, m.name, m.message from members as m join friends as f on m.id = f.friendId where f.memberId = :id;',
+        const list = await sequelize.query('select m.id, m.img, m.email, m.name, m.message from members as m join friends as f on m.id = f.friendId where f.memberId = :id;',
             { replacements: { id: req.query.id }, type: sequelize.QueryTypes.SELECT })
-            .then(data => {
-                res.json(data)
-            })
+        res.json(list)
     } catch (err) {
         console.log(err);
         next(err);
@@ -116,67 +112,51 @@ router.get('/main/friend/list', async (req, res, next) => {
 })
 
 // 친구 검색
-router.route('/main/friend').post((req, res) => {
-    const invitationCode = req.body.code;
-    const idx = req.body.idx;
-    if (pool) {
-        invitation(invitationCode, idx, (err, result) => {
-            if (err) {
-                res.writeHead('201', { 'content-type': 'text/html; charset=utf8' });
-                res.write('<h2>메인데이터 출력 실패 </h2>');
-                res.write('<p>데이터가 안나옵니다.</p>')
-                res.end();
-            } else {
-                res.send(result);
-            }
-        });
-    } else {
-        res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
-        res.end();
-    }
-});
-
-// 친구 검색
-const invitation = function (invitationCode, idx, callback) {
-    pool.getConnection((err, conn) => {
-        if (err) {
-            console.log(err);
-        } else {
-            let flag = false;
-            let fIdx = null;
-            conn.query('select idx, name, message, img, email from member where code = ?;', [invitationCode], (err, result1) => {
-                if (result1 !== "") fIdx = result1[0].idx;
-                conn.query('select exists (select idx from friend where memberIdx = ? and friendIdx = ? limit 1) as success;', [idx, fIdx], (err, result2) => {
-                    if (result2[0].success === 1) flag = true;
-                    conn.release();
-                    if (err) {
-                        callback(err, null);
-                        return;
-                    } else {
-                        callback(null, { result1, flag });
-                    }
-                })
-
-            });
-        }
-    });
-}
-
-// 친구 추가
-router.route('/main/insert_friend').post((req, res) => {
-    const fIdx = req.body.fIdx;
-    const idx = req.body.idx;
-    if (pool) {
-        insertFriend(fIdx, idx, (err, result) => {
-            if (err) {
-                res.writeHead('201', { 'content-type': 'text/html; charset=utf8' });
-                res.write('<h2>메인데이터 출력 실패 </h2>');
-                res.write('<p>데이터가 안나옵니다.</p>')
-                res.end();
-            } else {
-                res.send(result);
+router.post('/main/friend', async (req, res, next) => {
+    try {
+        const code = await Member.findOne({
+            attributes: ['id', 'name', 'email', 'message', 'img'],
+            where: {
+                code: req.body.code
             }
         })
+        if (code == null) {
+            res.json('해당 초대코드의 사용자가 없습니다.')
+        } else {
+            const flag = await sequelize.query('select exists (select * from friends where memberId = :id and friendId = :fId limit 1) as success;'
+            , { replacements: {id: req.body.id, fId: code.id}, type: sequelize.QueryTypes.SELECT})
+            let array = [{member: code}, {flag: flag}]
+            res.json(array)
+        }
+    } catch (err) {
+        console.log(err);
+        next(err);
+    }
+})
+router.post('/main/insert_friend', async (req, res, next) => {
+    try {
+        const flag = await sequelize.query('select exists (select * from friends where memberId = :id and friendId = :fId limit 1) as success;'
+          , { replacements: {id: req.body.id, fId: req.body.fId}, type: sequelize.QueryTypes.SELECT})
+        if (flag[0].success === 0) {
+            await Member.findByPk(req.body.id).then(value => {
+                value.setFriends([req.body.fId])
+            })
+            await Member.findByPk(req.body.fId).then(value => {
+                value.setFriends([req.body.id])
+            })
+            res.json("친구가 되었습니다.")
+        } else {
+            await Member.findByPk(req.body.id).then(value => {
+                value.removeFriends(req.body.fId)
+            })
+            await Member.findByPk(req.body.fId).then(value => {
+                value.removeFriends(req.body.id)
+            })
+            res.json("친구가 삭제되었습니다.")
+        }
+    } catch (err) {
+        console.log((err));
+        next(err);
     }
 })
 
@@ -244,32 +224,6 @@ const insertRoom = function (senderIdx, receiverIdx, callback) {
     })
 }
 
-// 친구 추가
-const insertFriend = function (fIdx, idx, callback) {
-    pool.getConnection((err, conn) => {
-        if (err) {
-            console.log(err)
-        } else {
-            conn.query('select exists (select idx from friend where memberIdx = ? and friendIdx = ? limit 1) as success;', [idx, fIdx], (err, result) => {
-                if (result[0].success === 1) {
-                    conn.query('delete from friend where memberIdx = ? and friendIdx = ?', [idx, fIdx]);
-                    conn.query('delete from friend where memberIdx = ? and friendIdx = ?', [fIdx, idx]);
-                } else {
-                    conn.query('insert into friend(memberIdx, friendIdx) values(?, ?)', [idx, fIdx]);
-                    conn.query('insert into friend(memberIdx, friendIdx) values(?, ?)', [fIdx, idx]);
-                }
 
-                conn.release();
-                if (err) {
-                    callback(err, null)
-                    console.log('select문 오류')
-
-                } else {
-                    callback(null, true);
-                }
-            });
-        }
-    })
-}
 
 module.exports = router
