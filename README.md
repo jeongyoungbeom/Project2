@@ -9,6 +9,8 @@
 * 사용 언어 : node.js, react, Javascript ES6
 * 사용 기술 : axios, socket.io, mail.api
 
+### 시퀄라이즈 적용중.....
+
 # 프로젝트 상세내용
 
 **구현 목표**
