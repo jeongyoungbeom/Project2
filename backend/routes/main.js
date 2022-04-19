@@ -36,14 +36,12 @@ router.get('/main', async (req, res, next) => {
                 }
             ]
         });
-
         let friendCnt;
         if (count.Members.length) {
             friendCnt = count.get('Members')[0].get('friendCnt');
         } else {
             friendCnt = 0;
         }
-
         const friend = await Member.findAll({
             attributes: ['id', 'img', 'name'],
             where: {
@@ -54,7 +52,6 @@ router.get('/main', async (req, res, next) => {
                 }
             }
         });
-
         let array = [{ profile: profile }, { postCnt: postCnt }, { friendCnt: friendCnt }, { friend: friend }];
         res.status(200).json(array)
     } catch (err) {
@@ -138,19 +135,19 @@ router.post('/main/insert_friend', async (req, res, next) => {
         const flag = await sequelize.query('select exists (select * from friends where memberId = :id and friendId = :fId limit 1) as success;'
           , { replacements: {id: req.body.id, fId: req.body.fId}, type: sequelize.QueryTypes.SELECT})
         if (flag[0].success === 0) {
-            await Member.findByPk(req.body.id).then(value => {
-                value.setFriends([req.body.fId])
+            await Member.findByPk(req.body.id).then(friends => {
+                friends.setFriends([req.body.fId])
             })
-            await Member.findByPk(req.body.fId).then(value => {
-                value.setFriends([req.body.id])
+            await Member.findByPk(req.body.fId).then(friends => {
+                friends.setFriends([req.body.id])
             })
             res.json("친구가 되었습니다.")
         } else {
-            await Member.findByPk(req.body.id).then(value => {
-                value.removeFriends(req.body.fId)
+            await Member.findByPk(req.body.id).then(friends => {
+                friends.removeFriends(req.body.fId)
             })
-            await Member.findByPk(req.body.fId).then(value => {
-                value.removeFriends(req.body.id)
+            await Member.findByPk(req.body.fId).then(friends => {
+                friends.removeFriends(req.body.id)
             })
             res.json("친구가 삭제되었습니다.")
         }
@@ -164,8 +161,6 @@ router.post('/main/insert_friend', async (req, res, next) => {
 router.route('/main/insert_chat_room').get((req, res) => {
     const senderIdx = req.query.senderIdx;
     const receiverIdx = req.query.receiverIdx;
-
-    console.log(senderIdx, receiverIdx)
 
     if (pool) {
         insertRoom(senderIdx, receiverIdx, (err, result) => {
@@ -223,7 +218,4 @@ const insertRoom = function (senderIdx, receiverIdx, callback) {
         }
     })
 }
-
-
-
 module.exports = router
