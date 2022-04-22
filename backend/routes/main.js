@@ -2,8 +2,8 @@ const express = require('express');
 const Member = require('../models/Member')
 const Post = require('../models/Post')
 const PostImg = require('../models/PostImg')
-const { Op } = require("sequelize");
-const { sequelize } = require('../models/Member');
+const { Op, Sequelize } = require("sequelize");
+// const { sequelize } = require('../models/Member');
 
 const mysql = require('mysql');
 const config = require('../config/config');
@@ -66,7 +66,7 @@ router.get('/main/post', async (req, res, next) => {
         const post = await PostImg.findAll({
             attributes: [
                 'createdAt', 'imgName', 'postId',
-                [sequelize.fn('count', sequelize.col('PostImg.id')), 'cnt']
+                [Sequelize.fn('count', Sequelize.col('PostImg.id')), 'cnt']
             ],
             include: [
                 {
@@ -89,7 +89,7 @@ router.get('/main/post', async (req, res, next) => {
 // 메인페이지 채팅
 router.get('/main/chat', async (req, res, next) => {
     try {
-        const chat = await sequelize.query('select r.title, r.id as roomId, rm.memberId as friend, m.img, m.name, (select content from chats where createdAt = (select max(createdAt) from chats where roomId = r.id)) as chat, (select max(createdAt) from chats where roomId = r.id) as time from roommems as rm join members as m on rm.memberId = m.id join rooms as r on r.id = rm.roomId where r.title in (select title from roommems as rm join rooms as r on rm.roomId = r.id where rm.memberId = :id ) and m.id != :id group by title;', { replacements: { id: req.query.id }, type: sequelize.QueryTypes.SELECT })
+        const chat = await Sequelize.query('select r.title, r.id as roomId, rm.memberId as friend, m.img, m.name, (select content from chats where createdAt = (select max(createdAt) from chats where roomId = r.id)) as chat, (select max(createdAt) from chats where roomId = r.id) as time from roommems as rm join members as m on rm.memberId = m.id join rooms as r on r.id = rm.roomId where r.title in (select title from roommems as rm join rooms as r on rm.roomId = r.id where rm.memberId = :id ) and m.id != :id group by title;', { replacements: { id: req.query.id }, type: Sequelize.QueryTypes.SELECT })
         res.json(chat);
     } catch (err) {
         console.log(err);
@@ -99,8 +99,8 @@ router.get('/main/chat', async (req, res, next) => {
 
 router.get('/main/friend/list', async (req, res, next) => {
     try {
-        const list = await sequelize.query('select m.id, m.img, m.email, m.name, m.message from members as m join friends as f on m.id = f.friendId where f.memberId = :id;',
-            { replacements: { id: req.query.id }, type: sequelize.QueryTypes.SELECT })
+        const list = await Sequelize.query('select m.id, m.img, m.email, m.name, m.message from members as m join friends as f on m.id = f.friendId where f.memberId = :id;',
+            { replacements: { id: req.query.id }, type: Sequelize.QueryTypes.SELECT })
         res.json(list)
     } catch (err) {
         console.log(err);
@@ -120,8 +120,8 @@ router.post('/main/friend', async (req, res, next) => {
         if (code == null) {
             res.json('해당 초대코드의 사용자가 없습니다.')
         } else {
-            const flag = await sequelize.query('select exists (select * from friends where memberId = :id and friendId = :fId limit 1) as success;'
-            , { replacements: {id: req.body.id, fId: code.id}, type: sequelize.QueryTypes.SELECT})
+            const flag = await Sequelize.query('select exists (select * from friends where memberId = :id and friendId = :fId limit 1) as success;'
+            , { replacements: {id: req.body.id, fId: code.id}, type: Sequelize.QueryTypes.SELECT})
             let array = [{member: code}, {flag: flag}]
             res.json(array)
         }
@@ -132,8 +132,8 @@ router.post('/main/friend', async (req, res, next) => {
 })
 router.post('/main/insert_friend', async (req, res, next) => {
     try {
-        const flag = await sequelize.query('select exists (select * from friends where memberId = :id and friendId = :fId limit 1) as success;'
-          , { replacements: {id: req.body.id, fId: req.body.fId}, type: sequelize.QueryTypes.SELECT})
+        const flag = await Sequelize.query('select exists (select * from friends where memberId = :id and friendId = :fId limit 1) as success;'
+          , { replacements: {id: req.body.id, fId: req.body.fId}, type: Sequelize.QueryTypes.SELECT})
         if (flag[0].success === 0) {
             await Member.findByPk(req.body.id).then(friends => {
                 friends.setFriends([req.body.fId])
@@ -152,7 +152,7 @@ router.post('/main/insert_friend', async (req, res, next) => {
             res.json("친구가 삭제되었습니다.")
         }
     } catch (err) {
-        console.log((err));
+        console.log(err);
         next(err);
     }
 })

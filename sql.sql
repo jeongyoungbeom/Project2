@@ -1,3 +1,4 @@
+use us_solo;
 select * from members;
 select * from posts;
 select * from postimgs;
@@ -5,11 +6,22 @@ select * from rooms;
 select * from roommems;
 select * from friends;
 
-insert into members(email, userPw, name, tel, code, createdAt) values("1번", "1번", "1번", 1111, "1번", "2022-04-10");
-insert into members(email, userPw, name, tel, code, createdAt) values("2번", "2번", "2번", 2222, "2번", "2022-04-10");
-insert into members(email, userPw, name, tel, code, createdAt) values("3번", "3번", "3번", 3333, "3번", "2022-04-10");
-insert into members(email, userPw, name, tel, code, createdAt) values("4번", "4번", "4번", 4444, "4번", "2022-04-10");
-insert into members(email, userPw, name, tel, code, createdAt) values("5번", "5번", "5번", 5555, "5번", "2022-04-10");
+
+insert into postimgs(imgPath, imgName, createdAt, postId) values("1번", "1번", "2022-04-10", 1);
+
+insert into members(email, userPw, name, tel, code, createdAt) values("1번이메일", "1번비밀번호", "1번이름", 1111, "1번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("2번이메일", "2번비밀번호", "2번이름", 2222, "2번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("3번이메일", "3번비밀번호", "3번이름", 3333, "3번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("4번이메일", "4번비밀번호", "4번이름", 4444, "4번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("5번이메일", "5번비밀번호", "5번이름", 5555, "5번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("6번이메일", "6번비밀번호", "6번이름", 6666, "6번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("7번이메일", "7번비밀번호", "7번이름", 7777, "7번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("8번이메일", "8번비밀번호", "8번이름", 8888, "8번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("9번이메일", "9번비밀번호", "9번이름", 9999, "9번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("10번이메일", "10번비밀번호", "10번이름", 1010, "10번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("11번이메일", "11번비밀번호", "11번이름", 1111, "11번코드", "2022-04-10");
+insert into members(email, userPw, name, tel, code, createdAt) values("12번이메일", "12번비밀번호", "12번이름", 1212, "12번코드", "2022-04-10");
+
 
 insert into friends(memberId, friendId, createdAt, updatedAt) values(1, 2, "2022-04-10", "2022-04-10");
 insert into friends(memberId, friendId, createdAt, updatedAt) values(1, 3, "2022-04-10", "2022-04-10");
@@ -41,3 +53,6 @@ where roomId = r.id)) as chat, (select max(createdAt) from chats where roomId = 
 where r.title in (select title from roommems as rm join rooms as r on rm.roomId = r.id where rm.memberId = '1' ) and m.id != '1' group by title;
 
 select m.id, m.img, m.email, m.name, m.message from members as m join friends as f on m.id = f.friendId where f.memberId = 1;
+select * from members where id='2' limit 1;
+select exists (select * from friends where memberId = 1 and friendId = 2 limit 1) as success;
+select * from members limit 3, 5;

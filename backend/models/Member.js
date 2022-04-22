@@ -20,6 +20,10 @@ module.exports = class Member extends Sequelize.Model {
                 type : Sequelize.INTEGER.UNSIGNED,
                 allowNull : false
             },
+            gender : {
+                type : Sequelize.ENUM('남', '여'),
+                allowNull : false
+            },
             code : {
                 type : Sequelize.STRING(30),
                 allowNull : false
@@ -29,6 +33,16 @@ module.exports = class Member extends Sequelize.Model {
             },
             message : {
                 type : Sequelize.STRING(500)
+            },
+            agreement1 : {
+                type : Sequelize.ENUM('Y', 'N'),
+                allowNull : false,
+                defaultValue : 'N'
+            },
+            agreement2 : {
+                type : Sequelize.ENUM('Y', 'N'),
+                allowNull : false,
+                defaultValue : 'N'
             },
             createdAt : {
                 type : Sequelize.DATE,
