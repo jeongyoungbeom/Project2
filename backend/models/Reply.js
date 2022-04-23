@@ -37,7 +37,7 @@ module.exports = class PostImg extends Sequelize.Model {
     };
 
     static associate(db) {
-        db.Reply.belongsToMany(db.Member, { through : 'ReplyLike'})
+        db.Reply.belongsToMany(db.Member, { through : 'ReplyLike', foreignKey : 'replyId'})
         db.Reply.belongsTo(db.Member, { foreignKey : 'memberId', targetKey : 'id'}),
         db.Reply.belongsTo(db.Post, { foreignKey : 'postId', targetKey : 'id'})
     }

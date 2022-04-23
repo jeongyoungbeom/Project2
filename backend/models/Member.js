@@ -64,8 +64,8 @@ module.exports = class Member extends Sequelize.Model {
     static associate(db) {
         db.Member.hasMany(db.Post, { foreignKey : 'memberId', sourceKey : 'id'})
         db.Member.hasMany(db.Reply, { foreignKey : 'memberId', sourceKey : 'id'})
-        db.Member.belongsToMany(db.Post, { through : 'PostLike'})
-        db.Member.belongsToMany(db.Reply, { through : 'ReplyLike'})
+        db.Member.belongsToMany(db.Post, { through : 'PostLike', foreignKey : 'memberId'})
+        db.Member.belongsToMany(db.Reply, { through : 'ReplyLike', foreignKey : 'memberId'})
         db.Member.hasMany(db.RoomMem, { foreignKey : 'memberId', sourceKey : 'id'})
         db.Member.hasMany(db.Chat, { foreignKey : 'memberId', sourceKey : 'id'})
         db.Member.hasMany(db.Inquiry, { foreignKey : 'memberId', sourceKey : 'id'})

@@ -29,6 +29,12 @@ insert into friends(memberId, friendId, createdAt, updatedAt) values(1, 4, "2022
 insert into friends(memberId, friendId, createdAt, updatedAt) values(1, 5, "2022-04-10", "2022-04-10");
 insert into friends(memberId, friendId, createdAt, updatedAt) values(2, 1, "2022-04-10", "2022-04-10");
 
+insert into posts(title, content, createdAt, updatedAt, memberId) values('1번글제목', '1번글내용', '2022-04-22', '2022-04-22', 1);
+insert into posts(title, content, createdAt, updatedAt, memberId) values('2번글제목', '2번글내용', '2022-04-22', '2022-04-22', 1);
+insert into posts(title, content, createdAt, updatedAt, memberId) values('3번글제목', '3번글내용', '2022-04-22', '2022-04-22', 1);
+insert into posts(title, content, createdAt, updatedAt, memberId) values('4번글제목', '4번글내용', '2022-04-22', '2022-04-22', 1);
+insert into posts(title, content, createdAt, updatedAt, memberId) values('5번글제목', '5번글내용', '2022-04-22', '2022-04-22', 1);
+
 insert into postimgs(imgPath, imgName, createdAt, postId) values("6번", "6번", "2022-04-10", 2);
 insert into postimgs(imgPath, imgName, createdAt, postId) values("7번", "7번", "2022-04-11", 2);
 insert into postimgs(imgPath, imgName, createdAt, postId) values("8번", "8번", "2022-04-12", 2);
@@ -56,3 +62,4 @@ select m.id, m.img, m.email, m.name, m.message from members as m join friends as
 select * from members where id='2' limit 1;
 select exists (select * from friends where memberId = 1 and friendId = 2 limit 1) as success;
 select * from members limit 3, 5;
+select m.email, m.name, p.content, p.createdAt from members as m inner join posts as p on m.id = p.memberId and p.id=3;

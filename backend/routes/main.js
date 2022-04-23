@@ -202,7 +202,6 @@ const insertRoom = function (senderIdx, receiverIdx, callback) {
                                     if (err3) {
                                         callback(err3, null);
                                         console.log(err3);
-                                        return;
                                     } else {
                                         callback(null, result2);
                                     }

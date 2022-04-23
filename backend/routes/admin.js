@@ -94,7 +94,7 @@ const LoginAdmin = function (email, userPw, callback) {
 router.route('/admin/logout').get((req, res) => {
   res.clearCookie("first");
   req.session.destroy(function (err, result) {
-    if (err) console.err('err : ', err);
+    if (err) console.error('err : ', err);
     res.json({message: "로그아웃!"});
   });
 });
@@ -288,7 +288,6 @@ const adminMemberPostDetail = function (postIdx, callback) {
         conn.release();
         if (err) {
           callback(err, null);
-          return;
         } else {
           callback(null, result);
         }
@@ -521,7 +520,7 @@ const adminMemberRoom = function (idx, cur, title, callback) {
   const page_size = 10;
   // 페이지의 갯수
   const page_list_size = 5;
-  // limit의 변수
+  // limit 변수
   let no = "";
   // 전체 게시물숫자
   let totalPageCount = 0;
@@ -613,7 +612,6 @@ const adminMemberRoom = function (idx, cur, title, callback) {
               conn.release();
               if (err) {
                 callback(err, null);
-                3
                 return;
               } else {
                 callback(null, {result, startPage, endPage, totalPage});
@@ -670,7 +668,7 @@ const adminPost = function (cur, date1, date2, callback) {
     } else {
       const date11 = date1 + " 00:00:00";
       const date22 = date2 + " 23:59:59";
-      if (date1 != "") {
+      if (date1 !== "") {
         conn.query('select count(*) as cnt from post where createdAt between ? and ? ', [date11, date22], (err, result) => {
           if (err) {
             console.log(err);
