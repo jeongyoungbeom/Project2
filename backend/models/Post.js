@@ -14,6 +14,11 @@ module.exports = class Post extends Sequelize.Model {
             hit : {
                 type : Sequelize.INTEGER.UNSIGNED,
                 defaultValue : 0
+            },
+            report : {
+                type : Sequelize.ENUM('Y', 'N'),
+                allowNull : false,
+                defaultValue : 'N'
             }
         }, {
             sequelize,

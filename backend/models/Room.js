@@ -12,6 +12,11 @@ module.exports = class Room extends Sequelize.Model {
                 allowNull : false,
                 defaultValue : 'N'
             },
+            type : {
+                type : Sequelize.ENUM('그룹', '일반'),
+                allowNull : false,
+                defaultValue : '일반'
+            },
             createdAt : {
                 type : Sequelize.DATE,
                 allowNull : false,

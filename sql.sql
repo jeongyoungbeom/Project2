@@ -1,11 +1,14 @@
 use us_solo;
 select * from members;
 select * from posts;
-select * from postimgs;
+select * from posreplyliketimgs;
 select * from rooms;
 select * from roommems;
 select * from friends;
+select * from chats;
 
+alter table rooms add type enum('일반', '그룹') default '일반' not null;
+alter table posts add report enum('Y', 'N') default 'N' not null;
 
 insert into postimgs(imgPath, imgName, createdAt, postId) values("1번", "1번", "2022-04-10", 1);
 
@@ -35,17 +38,25 @@ insert into posts(title, content, createdAt, updatedAt, memberId) values('3번�
 insert into posts(title, content, createdAt, updatedAt, memberId) values('4번글제목', '4번글내용', '2022-04-22', '2022-04-22', 1);
 insert into posts(title, content, createdAt, updatedAt, memberId) values('5번글제목', '5번글내용', '2022-04-22', '2022-04-22', 1);
 
-insert into postimgs(imgPath, imgName, createdAt, postId) values("6번", "6번", "2022-04-10", 2);
-insert into postimgs(imgPath, imgName, createdAt, postId) values("7번", "7번", "2022-04-11", 2);
-insert into postimgs(imgPath, imgName, createdAt, postId) values("8번", "8번", "2022-04-12", 2);
-insert into postimgs(imgPath, imgName, createdAt, postId) values("9번", "9번", "2022-04-13", 2);
+insert into postimgs(imgPath, imgName, createdAt, postId) values("1번", "1번", "2022-04-10", 1);
+insert into postimgs(imgPath, imgName, createdAt, postId) values("2번", "2번", "2022-04-11", 1);
+insert into postimgs(imgPath, imgName, createdAt, postId) values("3번", "3번", "2022-04-12", 1);
+insert into postimgs(imgPath, imgName, createdAt, postId) values("4번", "4번", "2022-04-13", 1);
+
+insert into replys(parentId, groupId, groupNum, depth, content, createdAt, updatedAt, memberId, postId) values(1, 1, 1, 1, '1번댓글', '2022-04-23', '2022-04-23', 1, 1);
 
 insert into rooms(title, report, createdAt) values("1번", "N", "2022-04-13");
+insert into rooms(title, report, createdAt) values("2번", "N", "2022-04-13");
 
-insert into roommems(memberId, roomId, createdAt) values(1, 1, "2022-04-13");
+insert into roommems(memberId, roomId, createdAt) values(1, 2, "2022-04-23");
+insert into roommems(memberId, roomId, createdAt) values(3, 1, "2022-04-13");
 insert into roommems(memberId, roomId, createdAt) values(2, 1, "2022-04-13");
 
-insert into chats(content, memberId, roomId, createdAt) values("안녕", 1, 1, "2022-04-13");
+insert into chats(content, memberId, roomId, createdAt) values("안녕1", 1, 1, "2022-04-13");
+insert into chats(content, memberId, roomId, createdAt) values("안녕2", 1, 1, "2022-04-13");
+insert into chats(content, memberId, roomId, createdAt) values("안녕3", 1, 1, "2022-04-13");
+insert into chats(content, memberId, roomId, createdAt) values("안녕4", 1, 1, "2022-04-13");
+insert into chats(content, memberId, roomId, createdAt) values("안녕5", 1, 1, "2022-04-13");
 
 alter table members add message varchar(500);
 drop table friend;
@@ -63,3 +74,5 @@ select * from members where id='2' limit 1;
 select exists (select * from friends where memberId = 1 and friendId = 2 limit 1) as success;
 select * from members limit 3, 5;
 select m.email, m.name, p.content, p.createdAt from members as m inner join posts as p on m.id = p.memberId and p.id=3;
+SELECT `Post`.`id`, `Post`.`content`, `Post`.`createdAt`, `Members`.`id` AS `Members.id`, `Members`.`email` AS `Members.email`, `Members`.`name` AS `Members.name`, `Members->PostLike`.`postId` AS `Members.PostLi
+ke.postId`, `Members->PostLike`.`memberId` AS `Members.PostLike.memberId`, `Members->PostLike`.`createdAt` AS `Members.PostLike.createdAt` FROM `Posts` AS `Post` LEFT OUTER JOIN ( `postLikes` AS `Members->PostLike` INNER JOIN `members` AS `Members` ON `Members`.`id` = `Members->PostLike`.`memberId`) ON `Post`.`id` = `Members->PostLike`.`postId`;

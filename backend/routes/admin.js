@@ -1,6 +1,11 @@
 const express = require('express');
 const Member = require('../models/Member');
 const Post = require('../models/Post');
+const PostImg = require('../models/PostImg');
+const Reply = require('../models/Reply');
+const Room = require('../models/Room');
+const RoomMem = require('../models/RoomMem');
+const Chat = require('../models/Chat');
 const {Op, Sequelize} = require("sequelize");
 
 const mysql = require('mysql');
@@ -260,96 +265,192 @@ router.get('/admin/member/post/detail', async (req, res, next) => {
       include: [{
         model: Member,
         attributes: ['email', 'name'],
+        association: 'Member',
       }],
-    })
-    res.json(postMember)
-      } catch (err) {
+      where: {
+        id: req.query.id
+      }
+    });
+
+    const imgName = await PostImg.findAll({
+      attributes: ['imgName'],
+      where: {
+        postId: req.query.id
+      }
+    });
+
+    const reply = await Reply.findAll({
+      attributes: ['content', 'groupId', 'depth', 'createdAt'],
+      include: [{
+        model: Member,
+        attributes: ['name'],
+        association: 'Member',
+      }],
+      where: {
+        postId: req.query.id
+      },
+      order: [['groupId', 'ASC'], ['groupNum', 'ASC']]
+    });
+
+    res.json([{postMember: postMember}, {imgName: imgName}, {reply: reply}])
+  } catch (err) {
     console.log(err);
     next(err);
   }
 })
 
-// 회원 게시글 디테일
-const adminMemberPostDetail = function (postIdx, callback) {
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
+// 회원 디테일 채팅창 목록
+router.get('/admin/member/room', async (req, res, next) => {
+  try {
+    const keyword = req.query.title;
+    if (keyword === undefined) {
+      const roomCnt = await Room.count({
+        include: [{
+          model: RoomMem,
+          where: {
+            memberId: req.query.id
+          }
+        }]
+      });
+      const array = page(req.query.curPage, roomCnt);
+      const room = await Room.findAll({
+        attributes: ['id', 'title', 'createdAt', 'type'],
+        include: [{
+          model: RoomMem,
+          attributes: [],
+          where: {
+            memberId: req.query.id
+          }
+        }],
+        order: [['id', 'DESC']],
+        limit: [array.no, array.page_size]
+      })
+      res.json(room)
     } else {
-      const sql1 = 'select p.content, p.createdAt, m.email, m.name from post as p join member as m on p.memberIdx = m.idx where p.idx = ?;';
-      const sql1s = mysql.format(sql1, postIdx)
-
-      const sql2 = 'select imgName from img where postIdx = ?;';
-      const sql2s = mysql.format(sql2, postIdx);
-
-      const sql3 = 'select r.content, m.name, r.groupIdx, r.depth, r.createdAt from reply as r join member as m on r.memberIdx = m.idx where postIdx = ? order by groupIdx asc, groupNum asc;';
-      const sql3s = mysql.format(sql3, postIdx);
-
-      conn.query(sql1s + sql2s + sql3s, (err, result) => {
-        conn.release();
-        if (err) {
-          callback(err, null);
-        } else {
-          callback(null, result);
+      const roomCnt = await Room.count({
+        include: [{
+          model: RoomMem,
+          where: {
+            memberId: req.query.id
+          }
+        }],
+        where: {
+          title: {
+            [Op.substring]: keyword
+          }
         }
       });
+      const array = page(req.query.curPage, roomCnt);
+      const room = await Room.findAll({
+        attributes: ['id', 'title', 'createdAt', 'type'],
+        include: [{
+          model: RoomMem,
+          attributes: [],
+          where: {
+            memberId: req.query.id
+          }
+        }],
+        where: {
+          title: {
+            [Op.substring]: keyword
+          }
+        },
+        order: [['id', 'DESC']],
+        limit: [array.no, array.page_size]
+      })
+      res.json(room)
     }
-  });
-}
-
-// 회원 디테일 채팅창 목록
-router.route('/admin/member/room').get((req, res) => {
-  const idx = req.query.idx;
-  const cur = req.query.page;
-  const title = req.query.title;
-  if (pool) {
-    adminMemberRoom(idx, cur, title, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
-      }
-    });
+  } catch (err) {
+    console.log(err);
+    next(err)
   }
-});
-
+})
 
 // 회원 디테일 채팅창 디테일
-router.route('/admin/member/room/detail').get((req, res) => {
-  const roomIdx = req.query.roomIdx;
-
-  if (pool) {
-    adminMemberRoomDetail(roomIdx, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
-      }
+router.get('/admin/member/room/detail', async (req, res, next) => {
+  try {
+    const room = await Room.findAll({
+      attributes: ['title'],
+      include: [{
+        model: Chat,
+        attributes: ['content', 'createdAt'],
+        where: {
+          roomId: req.query.id
+        },
+        include: [{
+          model: Member,
+          attributes: ['name', 'img']
+        }],
+        order: [['createdAt', 'ASC']]
+      }]
     });
+    const member = await Member.findAll({
+      attributes: ['name', 'img'],
+      distinct: true,
+      include: [{
+        model: Chat,
+        attribute: [],
+        where: {
+          roomId: req.query.id,
+        }
+      }]
+    })
+    res.json([{room: room}, {member: member}]);
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
 })
 
 // 게시글 목록
-router.route('/admin/post').get((req, res) => {
-  const cur = req.query.page;
-  const date1 = req.query.date1;
-  const date2 = req.query.date2;
-  if (pool) {
-    adminPost(cur, date1, date2, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
-      }
-    });
+router.get('/admin/post', async (req, res, next) => {
+  try {
+    const date11 = req.query.date1 === undefined ? undefined : req.query.date1 + " 00:00:00";
+    const date22 = req.query.date2 + " 23:59:59";
+    console.log(date11)
+    if (date11 === undefined) {
+      const postCnt = await Post.count();
+      const array = page(req.query.curPage, postCnt);
+      const post = await Post.findAll({
+        attributes: ['id', 'content', 'createdAt'],
+        include: [{
+          model: Member,
+          association: 'Member',
+          attributes: ['name']
+        }],
+        order: [['id', 'DESC']],
+        limit: [array.no, array.page_size]
+      });
+      res.json(post);
+    } else {
+      const postCnt = await Post.count({
+        where: {
+          createdAt: {
+            [Op.between]: [date11, date22]
+          }
+        }
+      });
+      const array = page(req.query.curPage, postCnt);
+      const post = await Post.findAll({
+        attributes: ['id', 'content', 'createdAt', 'report'],
+        include: [{
+          model: Member,
+          association: 'Member',
+          attributes: ['name']
+        }],
+        where: {
+          createdAt: {
+            [Op.between] : [date11, date22]
+          }
+        },
+        order: [['id', 'DESC']],
+        limit: [array.no, array.page_size]
+      });
+      res.json(post);
+    }
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
 })
 
@@ -513,249 +614,6 @@ router.route('/admin/inquiry/delete').get((req, res) => {
   }
 })
 
-
-// 회원 디테일 채팅방 목록
-const adminMemberRoom = function (idx, cur, title, callback) {
-  // 페이지 당 게시물 수
-  const page_size = 10;
-  // 페이지의 갯수
-  const page_list_size = 5;
-  // limit 변수
-  let no = "";
-  // 전체 게시물숫자
-  let totalPageCount = 0;
-  // 현재 페이지
-  let curPage = cur;
-
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      if (title == null) {
-        conn.query('select count(*) as cnt from room as r join room_mem as rm on r.idx = rm.roomIdx where rm.memberIdx = ?;', [idx], (err, result) => {
-          if (err) {
-            console.log(err);
-          } else {
-            totalPageCount = result[0].cnt;
-
-            if (totalPageCount < 0) {
-              totalPageCount = 0;
-            }
-
-            // 전체 페이지수
-            const totalPage = Math.ceil(totalPageCount / page_size);
-            // 전체 세트수
-            const totalSet = Math.ceil(totalPage / page_list_size);
-            // 현재 세트 번호
-            const curSet = Math.ceil(curPage / page_list_size);
-            //  현재 세트내 출력될 첫 페이지
-            const startPage = ((curSet - 1) * 5) + 1;
-            // 현재 세트내 출력될 마지막 페이지
-            let endPage = (startPage + page_list_size) - 1;
-
-            if (curPage < 0) {
-              no = 0
-            } else {
-              no = (curPage - 1) * 10
-            }
-
-            if (endPage > totalPage) {
-              endPage = totalPage;
-            }
-
-            conn.query('select r.idx, r.title, r.createdAt, r.type from room as r join room_mem as rm on r.idx = rm.roomIdx where rm.memberIdx = ? order by r.idx desc limit ?, ?;', [idx, no, page_size], (err, result) => {
-              conn.release();
-              if (err) {
-                callback(err, null);
-                3
-                return;
-              } else {
-                callback(null, {result, startPage, endPage, totalPage});
-              }
-            });
-          }
-        });
-      } else {
-        const keyword = "%" + title + "%";
-        conn.query('select count(*) as cnt from room as r join room_mem as rm on r.idx = rm.roomIdx where rm.memberIdx = ? and r.title like ?', [idx, keyword], (err, result) => {
-          if (err) {
-            console.log(err);
-          } else {
-            totalPageCount = result[0].cnt;
-
-            if (totalPageCount < 0) {
-              totalPageCount = 0;
-            }
-
-            // 전체 페이지수
-            const totalPage = Math.ceil(totalPageCount / page_size);
-            // 전체 세트수
-            const totalSet = Math.ceil(totalPage / page_list_size);
-            // 현재 세트 번호
-            const curSet = Math.ceil(curPage / page_list_size);
-            //  현재 세트내 출력될 첫 페이지
-            const startPage = ((curSet - 1) * 5) + 1;
-            // 현재 세트내 출력될 마지막 페이지
-            let endPage = (startPage + page_list_size) - 1;
-
-            if (curPage < 0) {
-              no = 0
-            } else {
-              no = (curPage - 1) * 10
-            }
-
-            if (endPage > totalPage) {
-              endPage = totalPage;
-            }
-
-            conn.query('select r.idx, r.title, r.createdAt, r.type from room as r join room_mem as rm on r.idx = rm.roomIdx where rm.memberIdx = ? and title like ? order by r.idx desc limit ?, ?;', [idx, keyword, no, page_size], (err, result) => {
-              conn.release();
-              if (err) {
-                callback(err, null);
-                return;
-              } else {
-                callback(null, {result, startPage, endPage, totalPage});
-              }
-            });
-          }
-        });
-      }
-    }
-  });
-}
-
-// 회원 디테일 채팅방 디테일
-const adminMemberRoomDetail = function (roomIdx, callback) {
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      const sql1 = 'select r.title, c.content, c.createdAt, m.name, m.img from room as r join chat as c on r.idx = c.roomIdx join member as m on c.memberIdx = m.idx where c.roomIdx = ? order by c.createdAt asc;';
-      const sql1s = mysql.format(sql1, roomIdx);
-
-      const sql2 = 'select distinct m.name, m.img from chat as c join member as m on c.memberIdx = m.idx where roomIdx = ?;'
-      const sql2s = mysql.format(sql2, roomIdx);
-
-      conn.query(sql1s + sql2s, (err, result) => {
-        conn.release();
-        if (err) {
-          callback(err, null);
-          return;
-        } else {
-          callback(null, result);
-        }
-      })
-    }
-  });
-}
-
-// 게시글 목록
-const adminPost = function (cur, date1, date2, callback) {
-  // 페이지 당 게시물 수
-  const page_size = 10;
-  // 페이지의 갯수
-  const page_list_size = 5;
-  // limit의 변수
-  let no = "";
-  // 전체 게시물숫자
-  let totalPageCount = 0;
-  // 현재 페이지
-  let curPage = cur;
-
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      const date11 = date1 + " 00:00:00";
-      const date22 = date2 + " 23:59:59";
-      if (date1 !== "") {
-        conn.query('select count(*) as cnt from post where createdAt between ? and ? ', [date11, date22], (err, result) => {
-          if (err) {
-            console.log(err);
-          } else {
-            totalPageCount = result[0].cnt;
-            if (totalPageCount < 0) {
-              totalPageCount = 0;
-            }
-            // 전체 페이지수
-            const totalPage = Math.ceil(totalPageCount / page_size);
-            // 전체 세트수
-            const totalSet = Math.ceil(totalPage / page_list_size);
-            // 현재 세트 번호
-            const curSet = Math.ceil(curPage / page_list_size);
-            //  현재 세트내 출력될 첫 페이지
-            const startPage = ((curSet - 1) * 5) + 1;
-            // 현재 세트내 출력될 마지막 페이지
-            let endPage = (startPage + page_list_size) - 1;
-
-            if (curPage < 0) {
-              no = 0
-            } else {
-              no = (curPage - 1) * 10
-            }
-
-            if (endPage > totalPage) {
-              endPage = totalPage;
-            }
-
-            conn.query('select p.idx, p.content, m.name, p.createdAt, p.report from post as p join member as m on p.memberIdx = m.idx where p.createdAt between ? and ? order by idx desc limit ?, ?', [date11, date22, no, page_size], (err, result) => {
-              conn.release();
-              if (err) {
-                callback(err, null);
-                return;
-              } else {
-                callback(null, {result, startPage, endPage, totalPage});
-              }
-            });
-          }
-        });
-      } else {
-        conn.query('select count(*) as cnt from post', (err, result) => {
-          if (err) {
-            console.log(err);
-          } else {
-            totalPageCount = result[0].cnt;
-
-            if (totalPageCount < 0) {
-              totalPageCount = 0;
-            }
-
-            // 전체 페이지수
-            const totalPage = Math.ceil(totalPageCount / page_size);
-            // 전체 세트수
-            const totalSet = Math.ceil(totalPage / page_list_size);
-            // 현재 세트 번호
-            const curSet = Math.ceil(curPage / page_list_size);
-            //  현재 세트내 출력될 첫 페이지
-            const startPage = ((curSet - 1) * 5) + 1;
-            // 현재 세트내 출력될 마지막 페이지
-            let endPage = (startPage + page_list_size) - 1;
-
-            if (curPage < 0) {
-              no = 0
-            } else {
-              no = (curPage - 1) * 10
-            }
-
-            if (endPage > totalPage) {
-              endPage = totalPage;
-            }
-
-            conn.query('select p.idx, p.content, m.name, p.createdAt from post as p join member as m on p.memberIdx = m.idx order by idx desc limit ?, ?', [no, page_size], (err, result) => {
-              conn.release();
-              if (err) {
-                callback(err, null);
-                return;
-              } else {
-                callback(null, {result, startPage, endPage, totalPage});
-              }
-            });
-          }
-        });
-      }
-    }
-  });
-}
 
 // 게시글 디테일
 const adminPostDetail = function (postIdx, callback) {
