@@ -6,6 +6,7 @@ const Reply = require('../models/Reply');
 const Room = require('../models/Room');
 const RoomMem = require('../models/RoomMem');
 const Chat = require('../models/Chat');
+const Inquiry = require('../models/Inquiry');
 const {Op, Sequelize} = require("sequelize");
 
 const mysql = require('mysql');
@@ -325,7 +326,7 @@ router.get('/admin/member/room', async (req, res, next) => {
         order: [['id', 'DESC']],
         limit: [array.no, array.page_size]
       })
-      res.json(room)
+      res.json([{room: room}, {startPage: array.startPage}, {endPage: array.endPage}, {totalPage: array.totalPage}]);
     } else {
       const roomCnt = await Room.count({
         include: [{
@@ -358,7 +359,7 @@ router.get('/admin/member/room', async (req, res, next) => {
         order: [['id', 'DESC']],
         limit: [array.no, array.page_size]
       })
-      res.json(room)
+      res.json([{room: room}, {startPage: array.startPage}, {endPage: array.endPage}, {totalPage: array.totalPage}]);
     }
   } catch (err) {
     console.log(err);
@@ -407,7 +408,6 @@ router.get('/admin/post', async (req, res, next) => {
   try {
     const date11 = req.query.date1 === undefined ? undefined : req.query.date1 + " 00:00:00";
     const date22 = req.query.date2 + " 23:59:59";
-    console.log(date11)
     if (date11 === undefined) {
       const postCnt = await Post.count();
       const array = page(req.query.curPage, postCnt);
@@ -421,7 +421,7 @@ router.get('/admin/post', async (req, res, next) => {
         order: [['id', 'DESC']],
         limit: [array.no, array.page_size]
       });
-      res.json(post);
+      res.json([{post: post}, {startPage: array.startPage}, {endPage: array.endPage}, {totalPage: array.totalPage}]);
     } else {
       const postCnt = await Post.count({
         where: {
@@ -440,13 +440,13 @@ router.get('/admin/post', async (req, res, next) => {
         }],
         where: {
           createdAt: {
-            [Op.between] : [date11, date22]
+            [Op.between]: [date11, date22]
           }
         },
         order: [['id', 'DESC']],
         limit: [array.no, array.page_size]
       });
-      res.json(post);
+      res.json([{post: post}, {startPage: array.startPage}, {endPage: array.endPage}, {totalPage: array.totalPage}]);
     }
   } catch (err) {
     console.log(err);
@@ -455,557 +455,337 @@ router.get('/admin/post', async (req, res, next) => {
 })
 
 // 게시글 디테일
-router.route('/admin/post/detail').get((req, res) => {
-  const postIdx = req.query.postIdx;
-
-  if (pool) {
-    adminPostDetail(postIdx, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
-      }
-    })
-  }
-})
-
-// 채팅 목록
-router.route('/admin/chat').get((req, res) => {
-  const cur = req.query.page;
-  const date1 = req.query.date1;
-  const date2 = req.query.date2;
-
-  if (pool) {
-    adminChat(cur, date1, date2, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
+router.get('/admin/post/detail', async (req, res, next) => {
+  try {
+    const postMember = await Post.findAll({
+      attributes: ['content', 'createdAt'],
+      include: [{
+        model: Member,
+        association: 'Member',
+        attributes: ['email', 'name']
+      }],
+      where: {
+        id: req.query.id
       }
     });
+
+    const postImg = await PostImg.findAll({
+      attributes: ['imgName'],
+      where: {
+        postId: req.query.id
+      }
+    });
+
+    const replyMember = await Reply.findAll({
+      attributes: ['content', 'createdAt'],
+      include: [{
+        model: Member,
+        attributes: ['email', 'img'],
+        association: 'Member',
+      }],
+      where: {
+        postId: req.query.id
+      }
+    });
+    res.json([{postMember, postImg, replyMember}])
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
-})
+});
+
+// 채팅 목록
+router.get('/admin/chat', async (req, res, next) => {
+  try {
+    const date11 = req.query.date1 === undefined ? undefined : req.query.date1 + " 00:00:00";
+    const date22 = req.query.date2 + " 23:59:59";
+    if (date11 === undefined) {
+      const roomCnt = await Room.count();
+      const array = page(req.query.curPage, roomCnt);
+      const room = await Room.findAll({
+        attributes: ['id', 'title', 'createdAt'],
+        include: [{
+          model: RoomMem,
+          attributes: []
+        }],
+        group: ['title'],
+        order: [['id', 'DESC']],
+        limit: [array.no, array.page_size]
+      });
+      res.json([{room: room}, {startPage: array.startPage}, {endPage: array.endPage}, {totalPage: array.totalPage}]);
+    } else {
+      const roomCnt = await Room.count({
+        where: {
+          createdAt: {
+            [Op.between]: [date11, date22]
+          }
+        }
+      });
+      const array = page(req.query.curPage, roomCnt);
+      const room = await Room.findAll({
+        attributes: ['id', 'title', 'createdAt'],
+        include: [{
+          model: RoomMem
+        }],
+        where: {
+          createdAt: {
+            [Op.between]: [date11, date22]
+          }
+        },
+        group: ['title'],
+        order: [['id', 'DESC']],
+        limit: [array.no, array.page_size]
+      });
+      res.json([{room: room}, {startPage: array.startPage}, {endPage: array.endPage}, {totalPage: array.totalPage}]);
+    }
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
 
 // 채팅 상세
-router.route('/admin/chat/detail').get((req, res) => {
-  const idx = req.query.idx;
+router.get('/admin/chat/detail', async (req, res, next) => {
+  try {
+    const chat = await Chat.findAll({
+      attributes: ['id', 'content', 'createdAt'],
+      include: [{
+        model: Room,
+        attributes: []
+      },{
+        model: Member,
+        attributes: ['name', 'img'],
+        association: 'Member',
+      }],
+      where: {
+        roomId: req.query.id
+      },
+      order: [['createdAt', 'ASC']]
+    });
 
-  if (pool) {
-    adminChatDetail(idx, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
-      }
-    })
+    const room = await Room.findAll({
+      attributes: ['title', 'createdAt', 'report', 'type'],
+      include: [{
+        model: RoomMem,
+        attributes: [[Sequelize.fn('count', Sequelize.col('roomId')), 'cnt']],
+        where: {
+          roomId: req.query.id
+        }
+      }]
+    });
+
+    const member = await Member.findAll({
+      attributes: ['name', 'img'],
+      include: [{
+        model: RoomMem,
+        attributes: [],
+        where: {
+          roomId: req.query.id
+        }
+      }]
+    });
+    res.json([chat, room, member])
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
-})
+});
 
 // 채팅 메시지 상세
-router.route('/admin/chat/detail/plus').get((req, res) => {
-  const idx = req.query.idx;
-
-  if (pool) {
-    adminChatDetailPlus(idx, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
-      }
-    })
+router.get('/amdin/chat/detail/plus', async (req, res, next) => {
+  try {
+    const member = await Member.findAll({
+      attributes: ['name'],
+      include: [{
+        model: Chat,
+        attributes: ['content'],
+        where: {
+          id: req.query.id
+        }
+      }]
+    });
+    res.json(member);
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
-})
+});
 
 // 1:1문의 내역
-router.route('/admin/inquiry').get((req, res) => {
-  const cur = req.query.page;
-  const name = req.query.name;
-  if (pool) {
-    adminInquiry(cur, name, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
+router.get('/admin/inquiry', async (req, res, next) => {
+  try {
+    const keyword = req.query.name
+    if (keyword === undefined) {
+      const inquiryCnt = await Inquiry.count();
+      const array = page(req.query.curPage, inquiryCnt);
+      const inquiry = await Inquiry.findAll({
+        attributes: ['id', 'content', 'createdAt'],
+        include: [{
+          model: Member,
+          attributes: ['name'],
+          association: 'Member'
+        }],
+        order: [['id', 'DESC']],
+        limit: [array.no, array.page_size]
+      });
+      res.json([{inquiry: inquiry}, {startPage: array.startPage}, {endPage: array.endPage}, {totalPage: array.totalPage}]);
+    } else {
+      const memberId = await Member.findOne({
+        attributes: ['id'],
+        where: {
+          name: req.query.id
+        }
+      });
+      const inquiryCnt = await Inquiry.count({
+        where: {
+          memberId: memberId
+        }
+      });
+      const array = page(req.query.curPage, inquiryCnt)
+      const inquiry = await Inquiry.findAll({
+        attributes: ['id', 'type', 'content', 'createdAt'],
+        include: [{
+          model: Member,
+          association: 'Member',
+          attributes: ['name']
+        }],
+        where: {
+          memberId: memberId
+        },
+        order: [['id', 'DESC']],
+        limit: [array.no, array.page_size]
+      });
+      res.json([{inquiry: inquiry}, {startPage: array.startPage}, {endPage: array.endPage}, {totalPage: array.totalPage}]);
+    }
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+
+// 문의 상세 type
+router.get('/admin/inquiry/detail', async (req, res, next) => {
+  try {
+    const inquiry = await Inquiry.findAll({
+      attributes: ['content', 'message', 'createdAt'],
+      include: [{
+        model: Member,
+        attributes: ['name'],
+        association: 'Member',
+      }],
+      where: {
+        id: req.query.id
       }
     });
+
+    const member = await Member.findAll({
+      attributes: ['name', 'email'],
+      include
+    })
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
 });
 
 // 문의 상세
-router.route('/admin/inquiry/detail').get((req, res) => {
-  const idx = req.query.idx;
-  if (pool) {
-    adminInquiryDetail(idx, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
-      }
-    });
-  }
-});
+// const adminInquiryDetail = function (idx, callback) {
+//   pool.getConnection((err, conn) => {
+//     if (err) {
+//       console.log(err);
+//     } else {
+//       const sql1 = 'select m.name, i.type, i.content, i.createdAt, i.message from inquiry as i join member m on i.memberIdx = m.idx where i.idx = ?;';
+//       const sql1s = mysql.format(sql1, idx)
+//
+//       const sql2 = 'select m.name, m.email from inquiry as i join member m on i.respondent = m.idx where i.idx = ?;';
+//       const sql2s = mysql.format(sql2, idx)
+//
+//       conn.query(sql1s + sql2s, (err, result) => {
+//         conn.release();
+//         if (err) {
+//           callback(err, null);
+//           return;
+//         } else {
+//           callback(null, result);
+//         }
+//       });
+//     }
+//   });
+// }
 
 // 문의 답변
-router.route('/admin/inquiry/repeat').get((req, res) => {
-  const idx = req.query.idx;
-  const message = req.query.message;
-  if (pool) {
-    adminInquiryRepeat(idx, message, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
+router.put('/admin/inquiry/repeat', async (req, res, next) => {
+  try {
+    const update = await Inquiry.update({
+      message: req.query.message }, {
+      where: {
+        id: req.query.id
       }
     });
-  }
-})
-
-// 대시보드
-router.route('/admin/dashBoard').get((req, res) => {
-  if (pool) {
-    adminDashBoard((err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
-      }
-    });
+    res.json(update);
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
 });
 
 // 문의 삭제
-router.route('/admin/inquiry/delete').get((req, res) => {
-  const idx = req.query.idx;
-  if (pool) {
-    adminInquiryDelete(idx, (err, result) => {
-      if (err) {
-        res.writeHead('200', {'content-type': 'text/html; charset=utf8'});
-        res.write('<h2>메인데이터 출력 실패 </h2>');
-        res.write('<p>데이터가 안나옵니다.</p>')
-        res.end();
-      } else {
-        res.send(result);
+router.delete('/admin/inquiry/delete', async (req, res, next) => {
+  try {
+    const inquiryDel = await Inquiry.destroy({
+      where: {
+         id: req.query.id
       }
     })
+    res.json(inquiryDel);
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
 })
 
-
-// 게시글 디테일
-const adminPostDetail = function (postIdx, callback) {
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      const sql1 = 'select p.content, p.createdAt, m.email, m.name from post as p join member as m on p.memberIdx = m.idx where p.idx = ?;';
-      const sql1s = mysql.format(sql1, postIdx)
-
-      const sql2 = 'select imgName from img where postIdx = ?;';
-      const sql2s = mysql.format(sql2, postIdx);
-
-      const sql3 = 'select r.content, m.email, m.img, r.createdAt from reply as r join member as m on r.memberIdx = m.idx where postIdx = ?;';
-      const sql3s = mysql.format(sql3, postIdx);
-
-      conn.query(sql1s + sql2s + sql3s, (err, result) => {
-        conn.release();
-        if (err) {
-          callback(err, null);
-          return;
-        } else {
-          callback(null, result);
-        }
-      });
-    }
-  });
-}
-
-// 채팅 목록
-const adminChat = function (cur, date1, date2, callback) {
-  // 페이지 당 게시물 수
-  const page_size = 10;
-  // 페이지의 갯수
-  const page_list_size = 5;
-  // limit의 변수
-  let no = "";
-  // 전체 게시물숫자
-  let totalPageCount = 0;
-  // 현재 페이지
-  let curPage = cur;
-
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log(date1)
-      const date11 = date1 + " 00:00:00";
-      const date22 = date2 + " 23:59:59";
-      if (date1 == "") {
-        conn.query('select count(*) as cnt from room', (err, result) => {
-          if (err) {
-            console.log(err);
-          } else {
-            totalPageCount = result[0].cnt;
-
-            if (totalPageCount < 0) {
-              totalPageCount = 0;
-            }
-
-            // 전체 페이지수
-            const totalPage = Math.ceil(totalPageCount / page_size);
-            // 전체 세트수
-            const totalSet = Math.ceil(totalPage / page_list_size);
-            // 현재 세트 번호
-            const curSet = Math.ceil(curPage / page_list_size);
-            //  현재 세트내 출력될 첫 페이지
-            const startPage = ((curSet - 1) * 5) + 1;
-            // 현재 세트내 출력될 마지막 페이지
-            let endPage = (startPage + page_list_size) - 1;
-
-            if (curPage < 0) {
-              no = 0
-            } else {
-              no = (curPage - 1) * 10
-            }
-
-            if (endPage > totalPage) {
-              endPage = totalPage;
-            }
-
-            conn.query('select r.idx, r.title, r.createdAt from room as r join room_mem as rm on r.idx = rm.roomIdx group by title order by idx desc limit ?, ?;', [no, page_size], (err, result) => {
-              conn.release();
-              if (err) {
-                callback(err, null);
-                return;
-              } else {
-                callback(null, {result, startPage, endPage, totalPage});
-              }
-            });
-          }
-        });
-      } else {
-        conn.query('select count(*) as cnt from room where createdAt between ? and ?', [date11, date22], (err, result) => {
-          if (err) {
-            console.log(err);
-          } else {
-            totalPageCount = result[0].cnt;
-
-            if (totalPageCount < 0) {
-              totalPageCount = 0;
-            }
-
-            // 전체 페이지수
-            const totalPage = Math.ceil(totalPageCount / page_size);
-            // 전체 세트수
-            const totalSet = Math.ceil(totalPage / page_list_size);
-            // 현재 세트 번호
-            const curSet = Math.ceil(curPage / page_list_size);
-            //  현재 세트내 출력될 첫 페이지
-            const startPage = ((curSet - 1) * 5) + 1;
-            // 현재 세트내 출력될 마지막 페이지
-            let endPage = (startPage + page_list_size) - 1;
-
-            if (curPage < 0) {
-              no = 0
-            } else {
-              no = (curPage - 1) * 10
-            }
-
-            if (endPage > totalPage) {
-              endPage = totalPage;
-            }
-
-            conn.query('select r.idx, r.title, r.createdAt from room as r join room_mem as rm on r.idx = rm.roomIdx where r.createdAt between ? and ? group by title order by idx desc limit ?, ?;', [date11, date22, no, page_size], (err, result) => {
-              conn.release();
-              if (err) {
-                callback(err, null);
-                return;
-              } else {
-                callback(null, {result, startPage, endPage, totalPage});
-              }
-            });
-          }
-        });
-      }
-    }
-  });
-}
-
-// 채팅 상세
-const adminChatDetail = function (idx, callback) {
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      const sql1 = 'select m.name, m.img, c.content, c.idx, c.createdAt from room as r join chat as c on r.idx = c.roomIdx join member as m on c.memberIdx = m.idx where c.roomIdx = ? order by c.createdAt asc;';
-      const sql1s = mysql.format(sql1, idx);
-
-      const sql2 = 'select r.title, count(rm.roomIdx) as cnt, r.createdAt, r.report, r.type from room_mem as rm join room as r where roomIdx = ?;';
-      const sql2s = mysql.format(sql2, idx);
-
-      const sql3 = 'select m.name, m.img from room_mem as rm join member m on rm.memberIdx = m.idx where roomIdx = ?;'
-      const sql3s = mysql.format(sql3, idx);
-
-      conn.query(sql1s + sql2s + sql3s, (err, result) => {
-        conn.release();
-        if (err) {
-          callback(err, null);
-          return;
-        } else {
-          callback(null, result);
-        }
-      });
-    }
-  });
-}
-
-// 채팅 상세 더보기
-const adminChatDetailPlus = function (idx, callback) {
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      conn.query('select m.name ,c.content from chat as c join member as m on c.memberIdx = m.idx where c.idx = ?;', [idx], (err, result) => {
-        conn.release();
-        if (err) {
-          callback(err, null);
-          return;
-        } else {
-          callback(null, result);
-        }
-      });
-    }
-  });
-}
-
-// 문의 목록
-const adminInquiry = function (cur, name, callback) {
-  // 페이지 당 게시물 수
-  const page_size = 10;
-  // 페이지의 갯수
-  const page_list_size = 5;
-  // limit의 변수
-  let no = "";
-  // 전체 게시물숫자
-  let totalPageCount = 0;
-  // 현재 페이지
-  let curPage = cur;
-
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      if (name == "") {
-        conn.query('select count(*) as cnt from inquiry', (err, result) => {
-          if (err) {
-            console.log(err);
-          } else {
-            totalPageCount = result[0].cnt;
-
-            if (totalPageCount < 0) {
-              totalPageCount = 0;
-            }
-            // 전체 페이지수
-            const totalPage = Math.ceil(totalPageCount / page_size);
-            // 전체 세트수
-            const totalSet = Math.ceil(totalPage / page_list_size);
-            // 현재 세트 번호
-            const curSet = Math.ceil(curPage / page_list_size);
-            //  현재 세트내 출력될 첫 페이지
-            const startPage = ((curSet - 1) * 5) + 1;
-            // 현재 세트내 출력될 마지막 페이지
-            let endPage = (startPage + page_list_size) - 1;
-
-            if (curPage < 0) {
-              no = 0
-            } else {
-              no = (curPage - 1) * 10
-            }
-
-            if (endPage > totalPage) {
-              endPage = totalPage;
-            }
-
-            conn.query('select m.name, i.idx, i.type, i.content, i.createdAt from inquiry as i join member m on i.memberIdx = m.idx order by i.idx desc limit ?, ?;', [no, page_size], (err, result) => {
-              conn.release();
-              if (err) {
-                callback(err, null);
-                return;
-              } else {
-                callback(null, {result, startPage, endPage, totalPage});
-              }
-            });
-          }
-        });
-      } else {
-        conn.query('select idx from member where name = ?', [name], (err, resultIdx) => {
-          if (err) {
-            console.log(err);
-          }
-          let idx = "";
-          if (resultIdx != "") {
-            idx = resultIdx[0].idx
-          }
-          conn.query('select count(*) as cnt from inquiry where memberIdx = ?', [idx], (err, result) => {
-            if (err) {
-              console.log(err);
-            } else {
-              totalPageCount = result[0].cnt;
-
-              if (totalPageCount < 0) {
-                totalPageCount = 0;
-              }
-
-              // 전체 페이지수
-              const totalPage = Math.ceil(totalPageCount / page_size);
-              // 전체 세트수
-              const totalSet = Math.ceil(totalPage / page_list_size);
-              // 현재 세트 번호
-              const curSet = Math.ceil(curPage / page_list_size);
-              //  현재 세트내 출력될 첫 페이지
-              const startPage = ((curSet - 1) * 5) + 1;
-              // 현재 세트내 출력될 마지막 페이지
-              let endPage = (startPage + page_list_size) - 1;
-
-              if (curPage < 0) {
-                no = 0
-              } else {
-                no = (curPage - 1) * 10
-              }
-
-              if (endPage > totalPage) {
-                endPage = totalPage;
-              }
-
-              conn.query('select m.name, i.idx, i.type, i.content, i.createdAt from inquiry as i join member m on i.memberIdx = m.idx where memberIdx = ? order by i.idx desc limit ?, ?;', [idx, no, page_size], (err, result) => {
-                conn.release();
-                if (err) {
-                  callback(err, null);
-                  return;
-                } else {
-                  callback(null, {result, startPage, endPage, totalPage});
-                }
-              });
-            }
-          });
-        });
-      }
-    }
-  });
-}
-
-// 문의 상세
-const adminInquiryDetail = function (idx, callback) {
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      const sql1 = 'select m.name, i.type, i.content, i.createdAt, i.message from inquiry as i join member m on i.memberIdx = m.idx where i.idx = ?;';
-      const sql1s = mysql.format(sql1, idx)
-
-      const sql2 = 'select m.name, m.email from inquiry as i join member m on i.respondent = m.idx where i.idx = ?;';
-      const sql2s = mysql.format(sql2, idx)
-
-      conn.query(sql1s + sql2s, (err, result) => {
-        conn.release();
-        if (err) {
-          callback(err, null);
-          return;
-        } else {
-          callback(null, result);
-        }
-      });
-    }
-  });
-}
-
-// 문의 답변
-const adminInquiryRepeat = function (idx, message, callback) {
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      conn.query('update inquiry set message = ? where idx = ?', [message, idx], (err, result) => {
-        conn.release();
-        if (err) {
-          callback(err, null);
-          return;
-        } else {
-          callback(null, true);
-        }
-      })
-    }
-  });
-}
-
 // 대시보드
-const adminDashBoard = function (callback) {
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      const sql1 = 'select count(*) as memberCnt from member;';
-      const sql2 = 'select count(*) as postCnt from post;';
-      const sql3 = 'select count(*) as roomCnt from room;';
-      const sql4 = 'select count(*) as inquiryCnt from inquiry;';
+router.get('/admin/dashBoard', async (req, res, next) => {
+  try {
+    const memberCnt = await Member.count();
+    const postCnt = await Post.count();
+    const roomCnt = await Room.count();
+    const inquiryCnt = await Inquiry.count();
 
-      const sql5 = 'select idx, email from member order by createdAt desc limit 0, 5;';
-      const sql6 = 'select idx, content as postContent from post order by createdAt desc limit 0, 5;';
-      const sql7 = 'select idx, content as inquiryContent from inquiry order by createdAt desc limit 0, 5;';
-      const sql8 = 'select r.idx, r.title, r.type, count(*) as ChatCnt, r.createdAt  from room as r join room_mem as rm on r.idx = rm.roomIdx group by r.title order by r.createdAt desc limit 0, 5;';
+    const member = await Member.findAll({
+      attributes: ['id', 'email'],
+      order: [['createdAt', 'DESC']],
+      limit: [0, 5]
+    });
 
-      conn.query(sql1 + sql2 + sql3 + sql4 + sql5 + sql6 + sql7 + sql8, (err, result) => {
-        conn.release();
-        if (err) {
-          callback(err, null);
-          return;
-        } else {
-          callback(null, result);
-        }
-      })
-    }
-  });
-}
+    const postContent = await Post.findAll({
+      attributes: ['id', 'content'],
+      order: [['createdAt', 'DESC']],
+      limit: [0, 5]
+    })
 
-// 문의 삭제
-const adminInquiryDelete = function (idx, callback) {
-  pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-    } else {
-      conn.query('delete from inquiry where idx = ?', [idx], (err, result) => {
-        conn.release();
-        if (err) {
-          callback(err, null);
-          return;
-        } else {
-          callback(null, true);
-        }
-      })
-    }
-  });
-}
+    const inquiryContent = await Inquiry.findAll({
+      attributes: ['id', 'content'],
+      order: [['createdAt', 'DESC']],
+      limit: [0, 5]
+    });
+
+    const room = await Room.findAll({
+      attributes: ['id', 'title', 'createdAt'],
+      include: [{
+        model: RoomMem,
+        attributes: [[Sequelize.fn('count', Sequelize.col('RoomMems.id')), 'cnt']],
+      }],
+      group: ['title'],
+      order: [['createdAt', 'DESC']],
+      limit: [0, 5]
+    });
+
+    res.json([{memberCnt: memberCnt}, {postCnt: postCnt}, {roomCnt: roomCnt}, {inquiryCnt: inquiryCnt}, {member: member}, {postContent: postContent}, {inquiryContent: inquiryContent}, {room: room}])
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+})
+
 module.exports = router
