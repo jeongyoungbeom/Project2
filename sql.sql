@@ -6,9 +6,11 @@ select * from rooms;
 select * from roommems;
 select * from friends;
 select * from chats;
+select * from inquirys;
 
 alter table rooms add type enum('일반', '그룹') default '일반' not null;
 alter table posts add report enum('Y', 'N') default 'N' not null;
+alter table inquirys add message varchar(500);
 
 insert into postimgs(imgPath, imgName, createdAt, postId) values("1번", "1번", "2022-04-10", 1);
 
@@ -58,6 +60,12 @@ insert into chats(content, memberId, roomId, createdAt) values("안녕3", 1, 1, 
 insert into chats(content, memberId, roomId, createdAt) values("안녕4", 1, 1, "2022-04-13");
 insert into chats(content, memberId, roomId, createdAt) values("안녕5", 1, 1, "2022-04-13");
 
+insert into inquirys(title, content, createdAt, memberId) values('1번문의', '1번문의내용', '2022-04-26', 1);
+insert into inquirys(title, content, createdAt, memberId) values('2번문의', '2번문의내용', '2022-04-26', 1);
+insert into inquirys(title, content, createdAt, memberId) values('3번문의', '3번문의내용', '2022-04-26', 1);
+insert into inquirys(title, content, createdAt, memberId) values('4번문의', '4번문의내용', '2022-04-26', 1);
+insert into inquirys(title, content, createdAt, memberId) values('5번문의', '5번문의내용', '2022-04-26', 1);
+
 alter table members add message varchar(500);
 drop table friend;
 
@@ -76,3 +84,9 @@ select * from members limit 3, 5;
 select m.email, m.name, p.content, p.createdAt from members as m inner join posts as p on m.id = p.memberId and p.id=3;
 SELECT `Post`.`id`, `Post`.`content`, `Post`.`createdAt`, `Members`.`id` AS `Members.id`, `Members`.`email` AS `Members.email`, `Members`.`name` AS `Members.name`, `Members->PostLike`.`postId` AS `Members.PostLi
 ke.postId`, `Members->PostLike`.`memberId` AS `Members.PostLike.memberId`, `Members->PostLike`.`createdAt` AS `Members.PostLike.createdAt` FROM `Posts` AS `Post` LEFT OUTER JOIN ( `postLikes` AS `Members->PostLike` INNER JOIN `members` AS `Members` ON `Members`.`id` = `Members->PostLike`.`memberId`) ON `Post`.`id` = `Members->PostLike`.`postId`;
+select r.id, r.title, count(*) as ChatCnt, r.createdAt  from rooms as r join roommems as rm on r.id = rm.roomId 
+group by r.title order by r.createdAt desc limit 0, 5;
+
+SELECT `Room`.`id`, `Room`.`title`, `Room`.`createdAt` FROM `rooms` AS `Room` ORDER BY `Room`.`createdAt` DESC LIMIT 0, 5;
+SELECT `Room`.*, `RoomMems`.`id` AS `RoomMems.id`, count(`RoomMems`.`id`) AS `RoomMems.cnt` FROM (SELECT `Room`.`id`, `Room`.`title`, `Room`.`createdAt` FROM `rooms` AS `Room` GROUP BY `title` ORDER BY `Room`.`createdAt` DESC LIMIT 0, 5) AS `Room` LEFT OUTER JOIN `roomMems` AS `RoomMems` ON `Room`.`id` = `RoomMems`.`roomId` ORDER BY `Room`.`createdAt` DESC;
+select * from rooms as r join roommems as rm on r.id = rm.roomId group by r.title;
