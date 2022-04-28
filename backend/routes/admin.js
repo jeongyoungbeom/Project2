@@ -770,16 +770,19 @@ router.get('/admin/dashBoard', async (req, res, next) => {
       limit: [0, 5]
     });
 
-    const room = await Room.findAll({
-      attributes: ['id', 'title', 'createdAt'],
-      include: [{
-        model: RoomMem,
-        attributes: [[Sequelize.fn('count', Sequelize.col('RoomMems.id')), 'cnt']],
-      }],
-      group: ['title'],
-      order: [['createdAt', 'DESC']],
-      limit: [0, 5]
-    });
+    // const room = await Room.findAll({
+    //   attributes: ['id', 'title', 'createdAt'],
+    //   include: [{
+    //     model: RoomMem,
+    //     attributes: [[Sequelize.fn('count', Sequelize.col('RoomMems.id')), 'cnt']],
+    //   }],
+    //   group: ['title'],
+    //   order: [['createdAt', 'DESC']],
+    //   limit: [0, 5]
+    // });
+
+    const room = await Sequelize.query('select r.title, r.type, count(*) as ChatCnt, r.createdAt  from rooms as r join roomMems as rm on r.id = rm.roomId group by r.title order by r.createdAt desc limit 0, 5;'
+      , { type: Sequelize.QueryTypes.SELECT })
 
     res.json([{memberCnt: memberCnt}, {postCnt: postCnt}, {roomCnt: roomCnt}, {inquiryCnt: inquiryCnt}, {member: member}, {postContent: postContent}, {inquiryContent: inquiryContent}, {room: room}])
   } catch (err) {
