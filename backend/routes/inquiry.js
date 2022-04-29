@@ -1,10 +1,11 @@
 const express = require('express');
+const Inquiry = require('../models/Inquiry');
+
 const mysql = require('mysql');
 const config = require('../config/config.json');
-const bodyParser = require('body-parser');
 const pool = mysql.createPool(config);
+
 const router = express.Router()
-router.use(bodyParser.urlencoded({ extended: false }))
 const cors = require('cors');
 router.use(cors({origin : 'http://localhost:3000', credentials : true, methods : "put,get,post,delete,options"}));
 
@@ -27,6 +28,22 @@ router.route('/inquiry').post((req, res) => {
                 res.send(result);
             }
         })
+    }
+})
+
+router.post('/inquiry', async (req, res, next) => {
+    try {
+        const respondent = req.body.respondent;
+        if (respondent === undefined) {
+            Inquiry.create({
+
+            })
+        } else {
+
+        }
+    } catch (err) {
+        console.log(err);
+        next(err);
     }
 })
 //문의 하기

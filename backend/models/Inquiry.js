@@ -14,6 +14,9 @@ module.exports = class Inquiry extends Sequelize.Model {
             message : {
                 type : Sequelize.STRING(500)
             },
+            respondent : {
+                type : Sequelize.String(500)
+            },
             createdAt : {
                 type : Sequelize.DATE,
                 allowNull : false,
