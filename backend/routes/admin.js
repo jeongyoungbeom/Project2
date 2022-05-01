@@ -140,7 +140,6 @@ function page(cur, cnt) {
     endPage = totalPage;
   }
   return {startPage, endPage, totalPage, no, page_size}
-
 }
 
 // 전체회원
