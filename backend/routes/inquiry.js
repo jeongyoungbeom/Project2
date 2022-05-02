@@ -1,5 +1,6 @@
 const express = require('express');
 const Inquiry = require('../models/Inquiry');
+const Member = require('../models/Member');
 
 const mysql = require('mysql');
 const config = require('../config/config.json');
@@ -7,6 +8,7 @@ const pool = mysql.createPool(config);
 
 const router = express.Router()
 const cors = require('cors');
+const {Sequelize} = require("sequelize/types");
 router.use(cors({origin : 'http://localhost:3000', credentials : true, methods : "put,get,post,delete,options"}));
 
 // 페이지
@@ -96,24 +98,20 @@ router.get('/member/inquirylist', async (req, res, next) => {
 })
 
 // 사용자 문의 상세 내역
-router.route('/member/inquirydetail').get((req, res) => {
-    const idx = req.query.idx;
-    if (pool) {
-        inquiryDetail(idx, (err, result) => {
-            if (err) {
-                res.writeHead('200', { 'content-type': 'text/html; charset=utf8' });
-                res.write('<h2>메인데이터 출력 실패 </h2>');
-                res.write('<p>데이터가 안나옵니다.</p>')
-                res.end();
-            } else {
-                res.send(result);
-            }
-        });
-    }
-});
 router.get('/member/inquirydetail', async (req, res, next) => {
     try {
-        const memberInquiry = await Inquiry
+        const memberInquiry = await Inquiry.findAll({
+            attributes: ['content', 'createdAt', 'message'],
+            include: [{
+                model: Member,
+                association: 'Member'
+            }],
+            where: {
+                id: req.query.id
+            }
+        });
+        const member = await Sequelize.query('select m.name, m.email from inquirys as i join members m on i.respondent = m.id where i.id = ?;', {replacements: {id: req.query.id}}, { type: Sequelize.QueryTypes.SELECT })
+        req.json([{memberInquiry: memberInquiry}, {member: member}]);
     } catch (err) {
         console.log(err);
         next(err);
@@ -128,7 +126,7 @@ const inquiryDetail = function (idx, callback) {
             const sql1 = 'select m.idx, m.name, m.img, i.type, i.content, i.createdAt, i.message from inquiry as i join member m on i.memberIdx = m.idx where i.idx = ?;';
             const sql1s = mysql.format(sql1, idx)
 
-            const sql2 = 'select m.name, m.email from inquiry as i join member m on i.respondent = m.idx where i.idx = ?;';
+            const sql2 = '';
             const sql2s = mysql.format(sql2, idx)
 
             conn.query(sql1s + sql2s, (err, result) => {
