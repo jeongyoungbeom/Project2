@@ -110,91 +110,31 @@ router.get('/member/inquirydetail', async (req, res, next) => {
                 id: req.query.id
             }
         });
-        const member = await Sequelize.query('select m.name, m.email from inquirys as i join members m on i.respondent = m.id where i.id = ?;', {replacements: {id: req.query.id}}, { type: Sequelize.QueryTypes.SELECT })
-        req.json([{memberInquiry: memberInquiry}, {member: member}]);
+        const member = await Sequelize.query('select m.name, m.email from inquirys as i join members m on i.respondent = m.id where i.id = :id;', {replacements: {id: req.query.id}}, { type: Sequelize.QueryTypes.SELECT })
+        res.json([{memberInquiry: memberInquiry}, {member: member}]);
     } catch (err) {
         console.log(err);
         next(err);
     }
-})
-// 문의 상세 내역
-const inquiryDetail = function (idx, callback) {
-    pool.getConnection((err, conn) => {
-        if (err) {
-            console.log(err);
-        } else {
-            const sql1 = 'select m.idx, m.name, m.img, i.type, i.content, i.createdAt, i.message from inquiry as i join member m on i.memberIdx = m.idx where i.idx = ?;';
-            const sql1s = mysql.format(sql1, idx)
-
-            const sql2 = '';
-            const sql2s = mysql.format(sql2, idx)
-
-            conn.query(sql1s + sql2s, (err, result) => {
-                conn.release();
-                if (err) {
-                    callback(err, null);
-                    return;
-                } else {
-                    callback(null, result);
-                }
-            });
-        }
-    });
-}
-
+});
 
 // 문의 - 친구리스트
-router.route('/inquiry/friend').get((req, res) => {
-    const idx = req.query.idx;
-    const friend = req.query.friend;
-    if (pool) {
-        inquiry_friend(idx, friend, (err, result) => {
-            if (err) {
-                res.writeHead('201', { 'content-type': 'text/html; charset=utf8' });
-                res.write('<h2>메인데이터 출력 실패 </h2>');
-                res.write('<p>데이터가 안나옵니다.</p>')
-                res.end();
-            } else {
-                res.send(result);
-            }
-        });
-    } else {
-        res.writeHead('200', { 'content-type': 'text/html;charset=utf8' });
-        res.end();
-    }
-})
-
-const inquiry_friend = function (idx, friend, callback) {
-    console.log(friend)
-    pool.getConnection((err, conn) => {
-        if (err) {
-            console.log(err);
+router.get('/inquiry/friend', async (req, res, next) => {
+    try {
+        const keyword = req.query.friend;
+        if (keyword === undefined) {
+            const member = await Sequelize.query('select m.id, m.img, m.email, m.name from friends as f join members as m on m.idx = f.friendId where f.memberId = :id;',
+              {replacements: {id: req.query.id}}, { type: Sequelize.QueryTypes.SELECT });
+            res.json(member);
         } else {
-            if(friend==undefined||friend==''||friend=='undefined'){
-                conn.query('select m.idx, m.img, m.email, m.name from friend as f join member as m on m.idx = f.friendIdx where f.memberIdx = ?;', [idx], (err, result) => {
-                    conn.release();
-                    if (err) {
-                        callback(err, null);
-                        return;
-                    } else {
-                        callback(null, result);
-                    }
-                });
-            }else{
-                const keyword = "%" + friend + "%"; 
-                conn.query('select m.idx, m.img, m.email, m.name from friend as f join member as m on m.idx = f.friendIdx where f.memberIdx = ? and m.name like ?;', [idx, keyword], (err, result) => {
-                    conn.release();
-                    if (err) {
-                        callback(err, null);
-                        return;
-                    } else {
-                        callback(null, result);
-                    }
-                });
-            }
-            
+            const member = await Sequelize.query('select m.idx, m.img, m.email, m.name from friend as f join member as m on m.idx = f.friendIdx where f.memberIdx = :id and m.name like :keyword;',
+              {replacements: {id: req.query.id, keyword: '%'+keyword+'%'}}, { type: Sequelize.QueryTypes.SELECT });
+            res.json(member);
         }
-    });
-}
+    } catch (err) {
+        console.log(err);
+        next(err);
+    }
+});
 
 module.exports = router
